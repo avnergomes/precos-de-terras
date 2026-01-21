@@ -48,30 +48,23 @@ export default function Footer({ metadata }) {
         </div>
 
         <div className="mt-6 md:mt-8 pt-4 md:pt-6 border-t border-accent-200 flex flex-col sm:flex-row items-center justify-between gap-3 md:gap-4">
-          <div className="flex flex-col sm:flex-row items-center gap-2 text-xs text-dark-600">
-            <p>
-              {currentYear} Precos de Terras PR. Dados publicos processados para fins analiticos.
-            </p>
-            <span className="hidden sm:inline text-accent-400">•</span>
-            <a
-              href="https://avnergomes.github.io/portfolio"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-dark-500 hover:text-primary-600 transition-colors group"
-              title="Desenvolvido por Avner Gomes"
-            >
-              <img
-                src={`${import.meta.env.BASE_URL}assets/logo2.png`}
-                alt="Avner Gomes"
-                className="w-7 h-7 md:w-8 md:h-8 rounded-md object-contain opacity-80 group-hover:opacity-100 transition-opacity"
-              />
-              <span className="text-[10px] md:text-xs">Desenvolvido por Avner Gomes</span>
-            </a>
-          </div>
-          <div className="flex items-center flex-wrap justify-center gap-2">
-            <span className="badge badge-green text-[10px] md:text-xs">Serie historica</span>
-            <span className="badge badge-yellow text-[10px] md:text-xs">Indicadores</span>
-          </div>
+          <p className="text-xs text-dark-600">
+            {currentYear} Precos de Terras PR. Dados publicos processados para fins analiticos.
+          </p>
+          <a
+            href="https://avnergomes.github.io/portfolio"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-dark-500 hover:text-primary-600 transition-colors group"
+            title="Desenvolvido por Avner Gomes"
+          >
+            <img
+              src={`${import.meta.env.BASE_URL}assets/logo2.png`}
+              alt="Avner Gomes"
+              className="w-7 h-7 md:w-8 md:h-8 rounded-md object-contain opacity-80 group-hover:opacity-100 transition-opacity"
+            />
+            <span className="text-[10px] md:text-xs">Desenvolvido por Avner Gomes</span>
+          </a>
         </div>
       </div>
     </footer>
