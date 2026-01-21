@@ -8,6 +8,7 @@ import Tabs from './components/Tabs';
 import KpiCards from './components/KpiCards';
 import TimeSeriesChart from './components/TimeSeriesChart';
 import CategoryChart from './components/CategoryChart';
+import CategoryChartSimple from './components/CategoryChartSimple';
 import TerritoryChart from './components/TerritoryChart';
 import RankingTable from './components/RankingTable';
 import MapChart from './components/MapChart';
@@ -97,7 +98,7 @@ export default function App() {
               <>
                 <TimeSeriesChart data={aggregates} />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <CategoryChart data={aggregates} />
+                  <CategoryChartSimple data={aggregates} />
                   <TerritoryChart data={aggregates} nivel={filters.nivel} />
                 </div>
               </>
