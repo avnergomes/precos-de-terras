@@ -187,7 +187,7 @@ def parse_single_year(text, year):
                 'nivel': 'Municipio',
                 'territorio': municipio,
                 'territorio_codigo': '',
-                'categoria': 'Classe de Terra',
+                'categoria': 'Classe de Capacidade de Uso',
                 'subcategoria': code,
                 'classe': '',
                 'preco': value,
