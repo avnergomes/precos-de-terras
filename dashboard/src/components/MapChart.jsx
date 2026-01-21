@@ -96,6 +96,17 @@ export default function MapChart({ data, geoData, nivel }) {
     };
   }, [filteredGeo]);
 
+  // Filtra features que têm dados no filtro atual
+  const featuresWithData = useMemo(() => {
+    if (!filteredGeo?.features?.length) return [];
+    return filteredGeo.features.filter(feature => {
+      const props = feature.properties || {};
+      const code = resolveFeatureCode(props);
+      const name = resolveFeatureName(props);
+      return valuesByCode.has(String(code)) || valuesByName.has(normalizeKey(name));
+    });
+  }, [filteredGeo, valuesByCode, valuesByName]);
+
   useEffect(() => {
     if (!mapInstanceRef.current || !filteredGeo) return;
 
@@ -177,8 +188,23 @@ export default function MapChart({ data, geoData, nivel }) {
       }).addTo(mapInstanceRef.current);
 
       layerRef.current = geoLayer;
+
+      // Ajusta zoom para os municípios com dados
+      if (featuresWithData.length > 0 && featuresWithData.length < filteredGeo.features.length) {
+        const boundsLayer = L.geoJSON({ type: 'FeatureCollection', features: featuresWithData });
+        const bounds = boundsLayer.getBounds();
+        if (bounds.isValid()) {
+          mapInstanceRef.current.fitBounds(bounds, { padding: [20, 20], maxZoom: 10 });
+        }
+      } else if (filteredGeo.features.length > 0) {
+        // Se todos os municípios têm dados ou nenhum filtro específico, mostra todo o estado
+        const bounds = geoLayer.getBounds();
+        if (bounds.isValid()) {
+          mapInstanceRef.current.fitBounds(bounds, { padding: [20, 20], maxZoom: 10 });
+        }
+      }
     });
-  }, [filteredGeo, valuesByCode, valuesByName, metric, minVal, maxVal]);
+  }, [filteredGeo, valuesByCode, valuesByName, metric, minVal, maxVal, featuresWithData]);
 
   if (!geoData) {
     return (
