@@ -167,19 +167,6 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
           </div>
 
           <div>
-            <label className="filter-label">Nivel Territorial</label>
-            <select
-              value={nivel}
-              onChange={(e) => onFiltersChange({ ...filters, nivel: e.target.value, territorios: [] })}
-              className="filter-select"
-            >
-              {metadata.niveis?.map(n => (
-                <option key={n} value={n}>{n}</option>
-              ))}
-            </select>
-          </div>
-
-          <div>
             <label className="filter-label">Mesorregiao</label>
             <MultiSelect
               options={metadata.mesorregioes || []}
