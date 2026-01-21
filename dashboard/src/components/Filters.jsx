@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Filter, ChevronDown, ChevronUp, RotateCcw, Download } from 'lucide-react';
+import { getClasseLabel, isNovoFormato } from '../utils/nomenclatura';
 
 export default function Filters({ metadata, detailed, filters, onFiltersChange, filteredData }) {
   const [isExpanded, setIsExpanded] = useState(true);
@@ -200,6 +201,7 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
               selected={subcategorias}
               onChange={(val) => onFiltersChange({ ...filters, subcategorias: val, classes: [] })}
               placeholder="Todas"
+              useLabels={true}
             />
           </div>
 
@@ -218,16 +220,17 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
   );
 }
 
-function MultiSelect({ options, selected, onChange, placeholder }) {
+function MultiSelect({ options, selected, onChange, placeholder, useLabels = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
 
   const filteredOptions = useMemo(() => {
     if (!search) return options;
-    return options.filter(opt =>
-      opt.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [options, search]);
+    return options.filter(opt => {
+      const label = useLabels && isNovoFormato(opt) ? getClasseLabel(opt, 'sipt') : opt;
+      return label.toLowerCase().includes(search.toLowerCase());
+    });
+  }, [options, search, useLabels]);
 
   const toggleOption = (opt) => {
     if (selected.includes(opt)) {
@@ -237,10 +240,14 @@ function MultiSelect({ options, selected, onChange, placeholder }) {
     }
   };
 
+  const getOptionLabel = (opt) => {
+    return useLabels && isNovoFormato(opt) ? getClasseLabel(opt, 'sipt') : opt;
+  };
+
   const displayText = selected.length === 0
     ? placeholder
     : selected.length === 1
-      ? selected[0]
+      ? getOptionLabel(selected[0])
       : `${selected.length} selecionados`;
 
   return (
@@ -285,7 +292,7 @@ function MultiSelect({ options, selected, onChange, placeholder }) {
                     className={`w-full px-4 py-2 text-left text-sm hover:bg-forest-50 flex items-center gap-2
                       ${selected.includes(opt) ? 'bg-forest-50 text-forest-700' : 'text-earth-700'}`}
                   >
-                    <span className={`w-4 h-4 rounded border flex items-center justify-center
+                    <span className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0
                       ${selected.includes(opt)
                         ? 'bg-forest-500 border-forest-500'
                         : 'border-earth-300'}`}
@@ -296,7 +303,12 @@ function MultiSelect({ options, selected, onChange, placeholder }) {
                         </svg>
                       )}
                     </span>
-                    {opt}
+                    <div className="flex-1">
+                      <div className="font-medium">{getOptionLabel(opt)}</div>
+                      {useLabels && isNovoFormato(opt) && (
+                        <div className="text-xs text-earth-500">{opt}</div>
+                      )}
+                    </div>
                   </button>
                 ))
               )}
