@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, LineChart, Line, Legend } from 'recharts';
-import { Layers3, TrendingUp, Grid3X3 } from 'lucide-react';
+import { Layers3, TrendingUp, Grid3X3, X } from 'lucide-react';
 import { formatCurrency } from '../utils/format';
 import { getClasseLabel } from '../utils/nomenclatura';
 
@@ -140,6 +140,10 @@ export default function CategoryChart({ data }) {
     });
   };
 
+  const removeSubcategoria = (sub) => {
+    setSelectedSubcategorias(prev => prev.filter(s => s !== sub));
+  };
+
   if (!data?.byCategoria?.length) {
     return (
       <div className="chart-container">
@@ -155,127 +159,145 @@ export default function CategoryChart({ data }) {
   }
 
   return (
-    <div className="chart-container">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-accent-100 rounded-lg">
-            <Layers3 className="w-5 h-5 text-accent-600" />
+    <div className="space-y-6">
+      {/* Cards Section */}
+      <div className="chart-container">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-accent-100 rounded-lg">
+              <Layers3 className="w-5 h-5 text-accent-600" />
+            </div>
+            <h3 className="section-title">Distribuicao por categoria</h3>
           </div>
-          <h3 className="section-title">Distribuicao por categoria</h3>
+
+          <div className="flex gap-1 bg-earth-100 p-1 rounded-lg">
+            <button
+              onClick={() => setViewMode('categorias')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                viewMode === 'categorias'
+                  ? 'bg-white text-earth-800 shadow-sm'
+                  : 'text-earth-500 hover:text-earth-700'
+              }`}
+            >
+              <Grid3X3 className="w-3.5 h-3.5 inline mr-1" />
+              Grupos
+            </button>
+            <button
+              onClick={() => setViewMode('subcategorias')}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
+                viewMode === 'subcategorias'
+                  ? 'bg-white text-earth-800 shadow-sm'
+                  : 'text-earth-500 hover:text-earth-700'
+              }`}
+            >
+              <Layers3 className="w-3.5 h-3.5 inline mr-1" />
+              Classes
+            </button>
+          </div>
         </div>
 
-        <div className="flex gap-1 bg-earth-100 p-1 rounded-lg">
-          <button
-            onClick={() => setViewMode('categorias')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-              viewMode === 'categorias'
-                ? 'bg-white text-earth-800 shadow-sm'
-                : 'text-earth-500 hover:text-earth-700'
-            }`}
-          >
-            <Grid3X3 className="w-3.5 h-3.5 inline mr-1" />
-            Grupos
-          </button>
-          <button
-            onClick={() => setViewMode('subcategorias')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-              viewMode === 'subcategorias'
-                ? 'bg-white text-earth-800 shadow-sm'
-                : 'text-earth-500 hover:text-earth-700'
-            }`}
-          >
-            <Layers3 className="w-3.5 h-3.5 inline mr-1" />
-            Classes
-          </button>
-          <button
-            onClick={() => setViewMode('timeseries')}
-            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all ${
-              viewMode === 'timeseries'
-                ? 'bg-white text-earth-800 shadow-sm'
-                : 'text-earth-500 hover:text-earth-700'
-            }`}
-          >
-            <TrendingUp className="w-3.5 h-3.5 inline mr-1" />
-            Evolucao
-          </button>
-        </div>
+        {viewMode === 'categorias' && (
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 10, left: 120, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
+                <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
+                <YAxis type="category" dataKey="categoriaLabel" width={110} tick={{ fontSize: 11 }} />
+                <Tooltip content={<CustomTooltip />} />
+                <Bar dataKey="media" fill="#62929E" radius={[0, 6, 6, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+
+        {viewMode === 'subcategorias' && (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {subcategoriaData.map((item) => (
+                <SubcategoriaCard
+                  key={item.subcategoria}
+                  item={item}
+                  isSelected={selectedSubcategorias.includes(item.subcategoria)}
+                  onClick={() => toggleSubcategoria(item.subcategoria)}
+                />
+              ))}
+            </div>
+            <p className="text-xs text-earth-400 text-center mt-3">
+              Clique nos cards para comparar a evolucao (maximo 4)
+            </p>
+          </>
+        )}
       </div>
 
-      {viewMode === 'categorias' && (
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 10, left: 120, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-              <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
-              <YAxis type="category" dataKey="categoriaLabel" width={110} tick={{ fontSize: 11 }} />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="media" fill="#62929E" radius={[0, 6, 6, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      )}
-
-      {viewMode === 'subcategorias' && (
-        <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-4">
-            {subcategoriaData.map((item) => (
-              <SubcategoriaCard
-                key={item.subcategoria}
-                item={item}
-                isSelected={selectedSubcategorias.includes(item.subcategoria)}
-                onClick={() => toggleSubcategoria(item.subcategoria)}
-              />
-            ))}
+      {/* Evolution Chart Section */}
+      <div className="chart-container">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary-100 rounded-lg">
+              <TrendingUp className="w-5 h-5 text-primary-600" />
+            </div>
+            <h3 className="section-title">Evolucao historica por classe</h3>
           </div>
-          {selectedSubcategorias.length > 0 && (
-            <p className="text-xs text-earth-500 text-center">
-              {selectedSubcategorias.length} classe(s) selecionada(s) - veja a evolucao na aba "Evolucao"
-            </p>
-          )}
-        </>
-      )}
 
-      {viewMode === 'timeseries' && (
-        <>
-          {selectedSubcategorias.length === 0 ? (
-            <div className="text-center py-12">
-              <TrendingUp className="w-12 h-12 text-earth-300 mx-auto mb-3" />
-              <p className="text-earth-500 mb-2">Selecione classes para ver a evolucao</p>
-              <p className="text-xs text-earth-400">
-                Clique nas classes na aba "Classes" (maximo 4)
-              </p>
-            </div>
-          ) : (
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={timeSeriesChartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="ano" tick={{ fontSize: 11 }} />
-                  <YAxis tickFormatter={(value) => formatCurrency(value)} tick={{ fontSize: 10 }} width={80} />
-                  <Tooltip content={<TimeSeriesCustomTooltip />} />
-                  <Legend
-                    wrapperStyle={{ fontSize: '11px' }}
-                    formatter={(value) => getClasseLabel(value, 'sipt') || value}
-                  />
-                  {selectedSubcategorias.map((sub) => (
-                    <Line
-                      key={sub}
-                      type="monotone"
-                      dataKey={sub}
-                      name={sub}
-                      stroke={SUBCATEGORIA_COLORS[sub] || '#62929E'}
-                      strokeWidth={2}
-                      dot={{ r: 3 }}
-                      activeDot={{ r: 5 }}
-                      connectNulls
-                    />
-                  ))}
-                </LineChart>
-              </ResponsiveContainer>
+          {selectedSubcategorias.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {selectedSubcategorias.map(sub => (
+                <span
+                  key={sub}
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium text-white"
+                  style={{ backgroundColor: SUBCATEGORIA_COLORS[sub] || '#62929E' }}
+                >
+                  {sub}
+                  <button
+                    onClick={() => removeSubcategoria(sub)}
+                    className="hover:bg-white/20 rounded-full p-0.5"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
             </div>
           )}
-        </>
-      )}
+        </div>
+
+        {selectedSubcategorias.length === 0 ? (
+          <div className="text-center py-12 bg-earth-50 rounded-xl">
+            <TrendingUp className="w-12 h-12 text-earth-300 mx-auto mb-3" />
+            <p className="text-earth-500 mb-1">Selecione classes para ver a evolucao</p>
+            <p className="text-xs text-earth-400">
+              Clique nos cards acima para adicionar ao grafico
+            </p>
+          </div>
+        ) : (
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={timeSeriesChartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                <XAxis dataKey="ano" tick={{ fontSize: 11 }} />
+                <YAxis tickFormatter={(value) => formatCurrency(value)} tick={{ fontSize: 10 }} width={80} />
+                <Tooltip content={<TimeSeriesCustomTooltip />} />
+                <Legend
+                  wrapperStyle={{ fontSize: '11px' }}
+                  formatter={(value) => `${value} - ${getClasseLabel(value, 'sipt') || value}`}
+                />
+                {selectedSubcategorias.map((sub) => (
+                  <Line
+                    key={sub}
+                    type="monotone"
+                    dataKey={sub}
+                    name={sub}
+                    stroke={SUBCATEGORIA_COLORS[sub] || '#62929E'}
+                    strokeWidth={2}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                    connectNulls
+                  />
+                ))}
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
