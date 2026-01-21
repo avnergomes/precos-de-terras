@@ -60,3 +60,7 @@ cd dashboard
 npm install
 npm run dev
 ```
+
+## GitHub Pages
+O deploy em Pages eh feito via GitHub Actions com build do dashboard.
+Garanta que o Pages esteja configurado para usar "GitHub Actions".
