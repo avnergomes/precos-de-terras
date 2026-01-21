@@ -61,9 +61,9 @@ export default function Footer({ metadata }) {
               title="Desenvolvido por Avner Gomes"
             >
               <img
-                src={`${import.meta.env.BASE_URL}assets/logo.svg`}
+                src={`${import.meta.env.BASE_URL}assets/logo2.png`}
                 alt="Avner Gomes"
-                className="w-5 h-5 md:w-6 md:h-6 rounded-full opacity-80 group-hover:opacity-100 transition-opacity"
+                className="w-7 h-7 md:w-8 md:h-8 rounded-full opacity-80 group-hover:opacity-100 transition-opacity"
               />
               <span className="text-[10px] md:text-xs">Desenvolvido por Avner Gomes</span>
             </a>
