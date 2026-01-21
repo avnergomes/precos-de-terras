@@ -197,6 +197,8 @@ export function useAggregations(filteredData, filters) {
         cagr: 0,
         timeSeries: [],
         byCategoria: [],
+        bySubcategoria: [],
+        timeSeriesBySubcategoria: {},
         byTerritorio: [],
       };
     }
@@ -242,6 +244,46 @@ export function useAggregations(filteredData, filters) {
       })
       .sort((a, b) => b.media - a.media);
 
+    const bySubcategoria = Array.from(groupBy(filteredData, row => row.subcategoria || 'Sem subcategoria').entries())
+      .map(([subcategoria, rows]) => {
+        const precoStats = computeStats(rows.map(r => r.preco).filter(v => Number.isFinite(v)));
+        const categoria = rows[0]?.categoria || '';
+        return {
+          subcategoria,
+          categoria,
+          media: precoStats.media,
+          mediana: precoStats.mediana,
+          min: precoStats.min,
+          max: precoStats.max,
+          registros: rows.length,
+        };
+      })
+      .sort((a, b) => {
+        if (a.subcategoria < b.subcategoria) return -1;
+        if (a.subcategoria > b.subcategoria) return 1;
+        return 0;
+      });
+
+    const timeSeriesBySubcategoria = {};
+    const subcategorias = [...new Set(filteredData.map(r => r.subcategoria).filter(Boolean))];
+    subcategorias.forEach(sub => {
+      const subData = filteredData.filter(r => r.subcategoria === sub);
+      const byAnoSub = groupBy(subData, row => row.ano);
+      timeSeriesBySubcategoria[sub] = Array.from(byAnoSub.entries())
+        .map(([ano, rows]) => {
+          const precoStats = computeStats(rows.map(r => r.preco).filter(v => Number.isFinite(v)));
+          return {
+            ano,
+            media: precoStats.media,
+            mediana: precoStats.mediana,
+            min: precoStats.min,
+            max: precoStats.max,
+            registros: rows.length,
+          };
+        })
+        .sort((a, b) => a.ano - b.ano);
+    });
+
     const byTerritorio = Array.from(groupBy(filteredData, row => row.territorio || 'Sem territorio').entries())
       .map(([territorio, rows]) => {
         const precoStats = computeStats(rows.map(r => r.preco).filter(v => Number.isFinite(v)));
@@ -268,6 +310,8 @@ export function useAggregations(filteredData, filters) {
       cagr,
       timeSeries,
       byCategoria,
+      bySubcategoria,
+      timeSeriesBySubcategoria,
       byTerritorio,
     };
   }, [filteredData, filters.nivel]);
