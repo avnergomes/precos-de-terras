@@ -23,7 +23,8 @@ export default function App() {
     territorios: [],
     categorias: [],
     subcategorias: [],
-    classes: [],
+    regioes: [],
+    mesorregioes: [],
   });
 
   const [activeTab, setActiveTab] = useState('overview');

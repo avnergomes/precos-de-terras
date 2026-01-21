@@ -14,7 +14,8 @@ function buildMetadata(detailed, aggregated) {
       niveis: [],
       categorias: [],
       subcategorias: [],
-      classes: [],
+      regioes: [],
+      mesorregioes: [],
       territorios: {},
     };
   }
@@ -23,7 +24,8 @@ function buildMetadata(detailed, aggregated) {
   const niveisSet = new Set();
   const categoriasSet = new Set();
   const subcategoriasSet = new Set();
-  const classesSet = new Set();
+  const regioesSet = new Set();
+  const mesorregioesSet = new Set();
   const territorios = {};
 
   detailed.forEach(row => {
@@ -31,7 +33,8 @@ function buildMetadata(detailed, aggregated) {
     if (row.nivel) niveisSet.add(row.nivel);
     if (row.categoria) categoriasSet.add(row.categoria);
     if (row.subcategoria) subcategoriasSet.add(row.subcategoria);
-    if (row.classe) classesSet.add(row.classe);
+    if (row.regiao) regioesSet.add(row.regiao);
+    if (row.mesorregiao) mesorregioesSet.add(row.mesorregiao);
 
     if (row.nivel && row.territorio) {
       if (!territorios[row.nivel]) {
@@ -57,7 +60,8 @@ function buildMetadata(detailed, aggregated) {
     niveis: Array.from(niveisSet).sort(),
     categorias: Array.from(categoriasSet).sort(),
     subcategorias: Array.from(subcategoriasSet).sort(),
-    classes: Array.from(classesSet).sort(),
+    regioes: Array.from(regioesSet).sort(),
+    mesorregioes: Array.from(mesorregioesSet).sort(),
     territorios: territoriosSorted,
   };
 }
@@ -125,6 +129,14 @@ export function useFilteredData(detailed, filters) {
 
       if (filters.nivel && row.nivel !== filters.nivel) return false;
 
+      if (filters.mesorregioes?.length && !filters.mesorregioes.includes(row.mesorregiao)) {
+        return false;
+      }
+
+      if (filters.regioes?.length && !filters.regioes.includes(row.regiao)) {
+        return false;
+      }
+
       if (filters.territorios?.length && !filters.territorios.includes(row.territorio)) {
         return false;
       }
@@ -134,10 +146,6 @@ export function useFilteredData(detailed, filters) {
       }
 
       if (filters.subcategorias?.length && !filters.subcategorias.includes(row.subcategoria)) {
-        return false;
-      }
-
-      if (filters.classes?.length && !filters.classes.includes(row.classe)) {
         return false;
       }
 

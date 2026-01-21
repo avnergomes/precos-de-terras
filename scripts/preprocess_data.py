@@ -6,6 +6,7 @@ from glob import glob
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, 'data', 'extracted')
 OUTPUT_DIR = os.path.join(BASE_DIR, 'dashboard', 'public', 'data')
+MUN_PR_PATH = os.path.join(BASE_DIR, 'data', 'mun_PR.json')
 
 REQUIRED_FIELDS = [
     'ano',
@@ -70,6 +71,27 @@ def normalizar_nomenclatura(categoria, subcategoria):
     return categoria, subcategoria
 
 
+def load_municipios_map():
+    """Carrega mapeamento de municípios para região e mesorregião do mun_PR.json."""
+    if not os.path.exists(MUN_PR_PATH):
+        print(f'Aviso: {MUN_PR_PATH} não encontrado. Região/mesorregião não serão incluídas.')
+        return {}
+
+    with open(MUN_PR_PATH, encoding='utf-8') as f:
+        geojson = json.load(f)
+
+    mun_map = {}
+    for feature in geojson.get('features', []):
+        props = feature.get('properties', {})
+        nome = props.get('Municipio', '').strip()
+        if nome:
+            mun_map[nome.lower()] = {
+                'regiao': props.get('RegIdr', '').strip(),
+                'mesorregiao': props.get('MesoIdr', '').strip(),
+            }
+    return mun_map
+
+
 def parse_number(value):
     if value is None:
         return None
@@ -95,7 +117,8 @@ def build_metadata(rows):
     niveis = sorted({row['nivel'] for row in rows if row.get('nivel')})
     categorias = sorted({row['categoria'] for row in rows if row.get('categoria')})
     subcategorias = sorted({row['subcategoria'] for row in rows if row.get('subcategoria')})
-    classes = sorted({row['classe'] for row in rows if row.get('classe')})
+    regioes = sorted({row['regiao'] for row in rows if row.get('regiao')})
+    mesorregioes = sorted({row['mesorregiao'] for row in rows if row.get('mesorregiao')})
 
     territorios = {}
     for row in rows:
@@ -114,7 +137,8 @@ def build_metadata(rows):
         'niveis': niveis,
         'categorias': categorias,
         'subcategorias': subcategorias,
-        'classes': classes,
+        'regioes': regioes,
+        'mesorregioes': mesorregioes,
         'territorios': territorios,
     }
 
@@ -128,6 +152,9 @@ def main():
         if not csv_files:
             raise SystemExit('Nenhum CSV encontrado em data/extracted.')
 
+    # Carrega mapeamento de municípios para região/mesorregião
+    mun_map = load_municipios_map()
+
     rows = []
     for path in csv_files:
         with open(path, encoding='utf-8') as handle:
@@ -140,14 +167,18 @@ def main():
                 # Normaliza nomenclatura antiga para nova
                 categoria, subcategoria = normalizar_nomenclatura(categoria_raw, subcategoria_raw)
 
+                territorio = row.get('territorio', '').strip()
+                mun_info = mun_map.get(territorio.lower(), {})
+
                 registro = {
                     'ano': int(row['ano']) if row.get('ano') else None,
                     'nivel': row.get('nivel', '').strip(),
-                    'territorio': row.get('territorio', '').strip(),
+                    'territorio': territorio,
                     'territorio_codigo': row.get('territorio_codigo', '').strip(),
+                    'regiao': mun_info.get('regiao', ''),
+                    'mesorregiao': mun_info.get('mesorregiao', ''),
                     'categoria': categoria,
                     'subcategoria': subcategoria,
-                    'classe': row.get('classe', '').strip(),
                     'preco': parse_number(row.get('preco')),
                     'unidade': row.get('unidade', '').strip(),
                 }

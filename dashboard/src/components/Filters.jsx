@@ -7,13 +7,28 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
 
   if (!metadata) return null;
 
-  const { anos, nivel, territorios, categorias, subcategorias, classes } = filters;
+  const { anos, nivel, territorios, categorias, subcategorias, regioes, mesorregioes } = filters;
   const [anoMin, anoMax] = anos;
 
   const availableTerritorios = useMemo(() => {
     if (!nivel || !metadata.territorios?.[nivel]) return [];
     return metadata.territorios[nivel];
   }, [metadata, nivel]);
+
+  const availableTerritoriosByRegiao = useMemo(() => {
+    if (!detailed?.length) return availableTerritorios;
+    if (!regioes?.length && !mesorregioes?.length) return availableTerritorios;
+
+    const subset = detailed.filter(row =>
+      (!regioes?.length || regioes.includes(row.regiao)) &&
+      (!mesorregioes?.length || mesorregioes.includes(row.mesorregiao))
+    );
+    const set = new Set();
+    subset.forEach(row => {
+      if (row.territorio) set.add(row.territorio);
+    });
+    return Array.from(set).sort();
+  }, [detailed, regioes, mesorregioes, availableTerritorios]);
 
   const availableSubcategorias = useMemo(() => {
     if (!detailed?.length) return metadata.subcategorias || [];
@@ -27,19 +42,6 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
     return Array.from(set).sort();
   }, [detailed, categorias, metadata]);
 
-  const availableClasses = useMemo(() => {
-    if (!detailed?.length) return metadata.classes || [];
-    const subset = detailed.filter(row =>
-      (!categorias.length || categorias.includes(row.categoria)) &&
-      (!subcategorias.length || subcategorias.includes(row.subcategoria))
-    );
-    const set = new Set();
-    subset.forEach(row => {
-      if (row.classe) set.add(row.classe);
-    });
-    return Array.from(set).sort();
-  }, [detailed, categorias, subcategorias, metadata]);
-
   const handleReset = () => {
     onFiltersChange({
       anos: [metadata.anoMin, metadata.anoMax],
@@ -47,7 +49,8 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
       territorios: [],
       categorias: [],
       subcategorias: [],
-      classes: [],
+      regioes: [],
+      mesorregioes: [],
     });
   };
 
@@ -55,22 +58,24 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
     territorios.length > 0 ||
     categorias.length > 0 ||
     subcategorias.length > 0 ||
-    classes.length > 0 ||
+    regioes?.length > 0 ||
+    mesorregioes?.length > 0 ||
     anoMin !== metadata.anoMin ||
     anoMax !== metadata.anoMax;
 
   const handleExportCSV = () => {
     if (!filteredData?.length) return;
-    let csvContent = 'ano,nivel,territorio,codigo,categoria,subcategoria,classe,preco,unidade\n';
+    let csvContent = 'ano,nivel,territorio,codigo,regiao,mesorregiao,categoria,subcategoria,preco,unidade\n';
     filteredData.forEach(row => {
       const linha = [
         row.ano,
         row.nivel,
         `"${row.territorio || ''}"`,
         row.territorio_codigo || '',
+        `"${row.regiao || ''}"`,
+        `"${row.mesorregiao || ''}"`,
         `"${row.categoria || ''}"`,
         `"${row.subcategoria || ''}"`,
-        `"${row.classe || ''}"`,
         row.preco,
         row.unidade || ''
       ].join(',');
@@ -175,9 +180,29 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
           </div>
 
           <div>
-            <label className="filter-label">Territorio</label>
+            <label className="filter-label">Mesorregiao</label>
             <MultiSelect
-              options={availableTerritorios}
+              options={metadata.mesorregioes || []}
+              selected={mesorregioes || []}
+              onChange={(val) => onFiltersChange({ ...filters, mesorregioes: val, regioes: [], territorios: [] })}
+              placeholder="Todas"
+            />
+          </div>
+
+          <div>
+            <label className="filter-label">Regiao</label>
+            <MultiSelect
+              options={metadata.regioes || []}
+              selected={regioes || []}
+              onChange={(val) => onFiltersChange({ ...filters, regioes: val, territorios: [] })}
+              placeholder="Todas"
+            />
+          </div>
+
+          <div>
+            <label className="filter-label">Municipio</label>
+            <MultiSelect
+              options={availableTerritoriosByRegiao}
               selected={territorios}
               onChange={(val) => onFiltersChange({ ...filters, territorios: val })}
               placeholder="Todos"
@@ -189,7 +214,7 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
             <MultiSelect
               options={metadata.categorias || []}
               selected={categorias}
-              onChange={(val) => onFiltersChange({ ...filters, categorias: val, subcategorias: [], classes: [] })}
+              onChange={(val) => onFiltersChange({ ...filters, categorias: val, subcategorias: [] })}
               placeholder="Todas"
             />
           </div>
@@ -199,19 +224,9 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
             <MultiSelect
               options={availableSubcategorias}
               selected={subcategorias}
-              onChange={(val) => onFiltersChange({ ...filters, subcategorias: val, classes: [] })}
+              onChange={(val) => onFiltersChange({ ...filters, subcategorias: val })}
               placeholder="Todas"
               useLabels={true}
-            />
-          </div>
-
-          <div>
-            <label className="filter-label">Classe</label>
-            <MultiSelect
-              options={availableClasses}
-              selected={classes}
-              onChange={(val) => onFiltersChange({ ...filters, classes: val })}
-              placeholder="Todas"
             />
           </div>
         </div>

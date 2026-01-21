@@ -49,7 +49,40 @@
       "B-VII",
       "C-VIII"
     ],
-    "classes": [],
+    "regioes": [
+      "Apucarana",
+      "Campo Mourão",
+      "Cascavel",
+      "Cianorte",
+      "Cornélio Procópio",
+      "Curitiba",
+      "Dois Vizinhos",
+      "Francisco Beltrão",
+      "Guarapuava",
+      "Irati",
+      "Ivaiporã",
+      "Laranjeiras do Sul",
+      "Londrina",
+      "Maringá",
+      "Paranaguá",
+      "Paranavaí",
+      "Pato Branco",
+      "Pitanga",
+      "Ponta Grossa",
+      "Santo Antonio da Platina",
+      "Toledo",
+      "Umuarama",
+      "União da Vitória"
+    ],
+    "mesorregioes": [
+      "Centro",
+      "Centro Sul",
+      "Metropolitana e Litoral",
+      "Noroeste",
+      "Norte",
+      "Oeste",
+      "Sudoeste"
+    ],
     "territorios": {
       "Municipio": [
         "Abatiá",
