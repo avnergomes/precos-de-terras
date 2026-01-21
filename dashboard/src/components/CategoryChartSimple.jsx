@@ -43,7 +43,7 @@ export default function CategoryChartSimple({ data }) {
   }
 
   return (
-    <div className="chart-container">
+    <div className="chart-container h-full flex flex-col">
       <div className="flex items-center gap-3 mb-4">
         <div className="p-2 bg-accent-100 rounded-lg">
           <Layers3 className="w-5 h-5 text-accent-600" />
@@ -51,16 +51,47 @@ export default function CategoryChartSimple({ data }) {
         <h3 className="section-title">Distribuicao por categoria</h3>
       </div>
 
-      <div className="h-80">
+      <div className="flex-1 min-h-[200px]">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 10, left: 180, bottom: 0 }}>
+          <BarChart
+            data={chartData}
+            layout="vertical"
+            margin={{ top: 10, right: 20, left: 10, bottom: 10 }}
+            barCategoryGap="25%"
+          >
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" horizontal={false} />
-            <XAxis type="number" tickFormatter={(value) => formatCurrency(value)} />
-            <YAxis type="category" dataKey="categoriaLabel" width={160} tick={{ fontSize: 11 }} />
+            <XAxis
+              type="number"
+              tickFormatter={(value) => formatCurrency(value)}
+              tick={{ fontSize: 11 }}
+              axisLine={{ stroke: '#d1d5db' }}
+            />
+            <YAxis
+              type="category"
+              dataKey="categoria"
+              width={30}
+              tick={{ fontSize: 13, fontWeight: 600 }}
+              axisLine={false}
+              tickLine={false}
+            />
             <Tooltip content={<CustomTooltip />} />
-            <Bar dataKey="media" fill="#62929E" radius={[0, 6, 6, 0]} />
+            <Bar
+              dataKey="media"
+              fill="#62929E"
+              radius={[0, 8, 8, 0]}
+              barSize={40}
+            />
           </BarChart>
         </ResponsiveContainer>
+      </div>
+
+      <div className="mt-2 flex justify-center gap-6 text-xs text-earth-500">
+        {chartData.map(item => (
+          <div key={item.categoria} className="flex items-center gap-1.5">
+            <span className="font-semibold text-earth-700">{item.categoria}:</span>
+            <span>{item.categoriaLabel}</span>
+          </div>
+        ))}
       </div>
     </div>
   );
