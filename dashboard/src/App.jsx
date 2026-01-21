@@ -3,6 +3,7 @@ import { useData, useFilteredData, useAggregations } from './hooks/useData';
 
 import Header from './components/Header';
 import Filters from './components/Filters';
+import ClasseLegend from './components/ClasseLegend';
 import Tabs from './components/Tabs';
 import KpiCards from './components/KpiCards';
 import TimeSeriesChart from './components/TimeSeriesChart';
@@ -76,6 +77,8 @@ export default function App() {
           onFiltersChange={setFilters}
           filteredData={filteredData}
         />
+
+        <ClasseLegend />
 
         <KpiCards data={aggregates} />
 
