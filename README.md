@@ -1,6 +1,6 @@
 # precos-de-terras
 
-Dashboard para visualizacao dos precos de terras no Parana com analise historica e territorial.
+Dashboard para visualizacao dos precos de terras no Parana com analise historica.
 
 ## Fonte de dados
 - DERAL - Departamento de Economia Rural

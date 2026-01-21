@@ -1,10 +1,8 @@
-import { Landmark, MapPin, TrendingUp, Layers } from 'lucide-react';
+import { Landmark, TrendingUp } from 'lucide-react';
 
 export default function Header({ metadata }) {
   const anoMin = metadata?.anoMin || '----';
   const anoMax = metadata?.anoMax || '----';
-  const niveisCount = metadata?.niveis?.length || 0;
-  const categoriasCount = metadata?.categorias?.length || 0;
 
   return (
     <header className="relative overflow-hidden bg-gradient-to-br from-dark-900 via-secondary-700 to-primary-600 text-white">
@@ -34,22 +32,20 @@ export default function Header({ metadata }) {
                 Precos de Terras - PR
               </h1>
               <p className="text-accent-200 text-xs md:text-sm lg:text-base font-medium">
-                Analise Historica e Territorial dos Valores de Terra
+                Analise Historica dos Valores de Terra
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2 md:gap-4 lg:gap-6">
-            <QuickStat icon={MapPin} label={`${niveisCount}`} sublabel="Niveis territoriais" />
+          <div className="flex flex-wrap gap-2 md:gap-3 md:justify-end">
             <QuickStat icon={TrendingUp} label={`${anoMin}-${anoMax}`} sublabel="Serie historica" />
-            <QuickStat icon={Layers} label={`${categoriasCount}`} sublabel="Categorias" />
           </div>
         </div>
 
         <div className="mt-4 md:mt-6 p-3 md:p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
           <p className="text-neutral-50 text-xs md:text-sm leading-relaxed">
-            Explore a evolucao dos precos de terras no Parana com recorte por nivel territorial
-            e categorias de uso. Visualizacoes interativas apoiam comparacoes historicas e espaciais.
+            Acompanhe a evolucao anual dos precos de terras no Parana ao longo da serie historica.
+            Visualizacoes interativas destacam ciclos, tendencias e variacoes no tempo.
           </p>
         </div>
       </div>

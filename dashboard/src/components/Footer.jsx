@@ -14,7 +14,7 @@ export default function Footer({ metadata }) {
               Precos de Terras - PR
             </h3>
             <p className="text-xs md:text-sm text-dark-700 leading-relaxed">
-              Dashboard interativo para analise historica e territorial dos precos de terra no Parana.
+              Dashboard interativo para analise historica dos precos de terra no Parana.
             </p>
           </div>
 
@@ -43,8 +43,6 @@ export default function Footer({ metadata }) {
             <h4 className="font-semibold text-dark-900 text-sm md:text-base">Cobertura</h4>
             <ul className="space-y-2 text-xs md:text-sm text-dark-700">
               <li>Serie: {anoMin} - {anoMax}</li>
-              <li>Niveis territoriais: {metadata?.niveis?.length || 0}</li>
-              <li>Categorias: {metadata?.categorias?.length || 0}</li>
             </ul>
           </div>
         </div>
@@ -72,7 +70,6 @@ export default function Footer({ metadata }) {
           </div>
           <div className="flex items-center flex-wrap justify-center gap-2">
             <span className="badge badge-green text-[10px] md:text-xs">Serie historica</span>
-            <span className="badge badge-blue text-[10px] md:text-xs">Mapa territorial</span>
             <span className="badge badge-yellow text-[10px] md:text-xs">Indicadores</span>
           </div>
         </div>
