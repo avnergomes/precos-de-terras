@@ -36,9 +36,6 @@
       "Municipio"
     ],
     "categorias": [
-      "Classe de Capacidade de Uso"
-    ],
-    "subcategorias": [
       "A-I",
       "A-II",
       "A-III",
@@ -47,6 +44,7 @@
       "B-VII",
       "C-VIII"
     ],
+    "subcategorias": [],
     "classes": [],
     "territorios": {
       "Municipio": [

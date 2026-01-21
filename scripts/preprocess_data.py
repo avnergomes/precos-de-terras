@@ -48,21 +48,23 @@ SUBCATEGORIA_MAP = {
 
 
 def normalizar_nomenclatura(categoria, subcategoria):
-    """Converte nomenclatura antiga para nova."""
+    """Converte nomenclatura antiga para nova, promovendo subcategoria a categoria."""
     import re
 
-    # Se já está no formato novo, retorna como está
+    # Se já está no formato novo (A-I, B-VI, etc.), usa subcategoria como categoria
     if categoria == 'Classe de Capacidade de Uso' and subcategoria and re.match(r'^[ABC]-[IVX]+$', subcategoria):
-        return categoria, subcategoria
+        return subcategoria, ''
 
-    # Mapeia categoria
-    nova_categoria = CATEGORIA_MAP.get(categoria, categoria)
-
-    # Mapeia subcategoria usando chave composta
+    # Para formato antigo, mapeia e promove subcategoria a categoria
     chave = f'{categoria}|{subcategoria}'
-    nova_subcategoria = SUBCATEGORIA_MAP.get(chave, subcategoria)
+    nova_classe = SUBCATEGORIA_MAP.get(chave, subcategoria)
 
-    return nova_categoria, nova_subcategoria
+    # Se conseguiu mapear para uma classe válida, usa como categoria
+    if nova_classe and re.match(r'^[ABC]-[IVX]+$', nova_classe):
+        return nova_classe, ''
+
+    # Fallback: mantém original
+    return categoria, subcategoria
 
 
 def parse_number(value):
