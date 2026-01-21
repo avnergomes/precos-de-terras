@@ -1,24 +1,49 @@
 import { TrendingUp, TrendingDown, Sigma, Gauge, Map, Info } from 'lucide-react';
 import { formatCurrency, formatPercent, formatNumber } from '../utils/format';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 function Tooltip({ text, children }) {
   const [show, setShow] = useState(false);
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+  const triggerRef = useRef(null);
+
+  useEffect(() => {
+    if (show && triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      setPosition({
+        top: rect.top - 8,
+        left: rect.left + rect.width / 2,
+      });
+    }
+  }, [show]);
 
   return (
     <div className="relative inline-block">
       <div
+        ref={triggerRef}
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
         className="cursor-help"
       >
         {children}
       </div>
-      {show && (
-        <div className="absolute z-50 bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 text-xs text-white bg-earth-800 rounded-lg shadow-lg whitespace-nowrap max-w-xs text-center">
+      {show && createPortal(
+        <div
+          className="fixed z-[9999] px-3 py-2 text-xs text-white bg-earth-800 rounded-lg shadow-xl max-w-[280px] text-center pointer-events-none"
+          style={{
+            top: position.top,
+            left: position.left,
+            transform: 'translate(-50%, -100%)',
+          }}
+        >
           {text}
-          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-earth-800" />
-        </div>
+          <div
+            className="absolute border-4 border-transparent border-t-earth-800"
+            style={{ top: '100%', left: '50%', transform: 'translateX(-50%)' }}
+          />
+        </div>,
+        document.body
       )}
     </div>
   );
