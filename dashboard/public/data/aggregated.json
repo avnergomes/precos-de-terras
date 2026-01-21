@@ -36,6 +36,11 @@
       "Municipio"
     ],
     "categorias": [
+      "A",
+      "B",
+      "C"
+    ],
+    "subcategorias": [
       "A-I",
       "A-II",
       "A-III",
@@ -44,7 +49,6 @@
       "B-VII",
       "C-VIII"
     ],
-    "subcategorias": [],
     "classes": [],
     "territorios": {
       "Municipio": [

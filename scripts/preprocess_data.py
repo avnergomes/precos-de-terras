@@ -48,20 +48,23 @@ SUBCATEGORIA_MAP = {
 
 
 def normalizar_nomenclatura(categoria, subcategoria):
-    """Converte nomenclatura antiga para nova, promovendo subcategoria a categoria."""
+    """Converte nomenclatura antiga para nova. Categoria = grupo (A/B/C), Subcategoria = classe (A-I, etc.)."""
     import re
 
-    # Se já está no formato novo (A-I, B-VI, etc.), usa subcategoria como categoria
+    classe = None
+
+    # Se já está no formato novo (A-I, B-VI, etc.)
     if categoria == 'Classe de Capacidade de Uso' and subcategoria and re.match(r'^[ABC]-[IVX]+$', subcategoria):
-        return subcategoria, ''
+        classe = subcategoria
+    else:
+        # Para formato antigo, mapeia para classe
+        chave = f'{categoria}|{subcategoria}'
+        classe = SUBCATEGORIA_MAP.get(chave, subcategoria)
 
-    # Para formato antigo, mapeia e promove subcategoria a categoria
-    chave = f'{categoria}|{subcategoria}'
-    nova_classe = SUBCATEGORIA_MAP.get(chave, subcategoria)
-
-    # Se conseguiu mapear para uma classe válida, usa como categoria
-    if nova_classe and re.match(r'^[ABC]-[IVX]+$', nova_classe):
-        return nova_classe, ''
+    # Extrai o grupo (A, B ou C) da classe
+    if classe and re.match(r'^[ABC]-[IVX]+$', classe):
+        grupo = classe[0]  # Primeira letra: A, B ou C
+        return grupo, classe
 
     # Fallback: mantém original
     return categoria, subcategoria
