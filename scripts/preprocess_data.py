@@ -19,6 +19,51 @@ REQUIRED_FIELDS = [
     'unidade',
 ]
 
+# Mapeamento de nomenclatura antiga para nova
+# Baseado no Sistema de Capacidade de Uso do Solo (SBCS)
+CATEGORIA_MAP = {
+    'Roxa': 'Classe de Capacidade de Uso',
+    'Mista': 'Classe de Capacidade de Uso',
+    'Arenosa': 'Classe de Capacidade de Uso',
+    'Classe de Capacidade de Uso': 'Classe de Capacidade de Uso',
+}
+
+SUBCATEGORIA_MAP = {
+    # Roxa (mais fértil)
+    'Roxa|Mecanizada': 'A-I',
+    'Roxa|Mecanizável': 'A-II',
+    'Roxa|Não Mecanizável': 'B-VI',
+    'Roxa|Inaproveitáveis': 'C-VIII',
+    # Mista (média)
+    'Mista|Mecanizada': 'A-II',
+    'Mista|Mecanizável': 'A-III',
+    'Mista|Não Mecanizável': 'B-VII',
+    'Mista|Inaproveitáveis': 'C-VIII',
+    # Arenosa (menos fértil)
+    'Arenosa|Mecanizada': 'A-III',
+    'Arenosa|Mecanizável': 'A-IV',
+    'Arenosa|Não Mecanizável': 'B-VII',
+    'Arenosa|Inaproveitáveis': 'C-VIII',
+}
+
+
+def normalizar_nomenclatura(categoria, subcategoria):
+    """Converte nomenclatura antiga para nova."""
+    import re
+
+    # Se já está no formato novo, retorna como está
+    if categoria == 'Classe de Capacidade de Uso' and subcategoria and re.match(r'^[ABC]-[IVX]+$', subcategoria):
+        return categoria, subcategoria
+
+    # Mapeia categoria
+    nova_categoria = CATEGORIA_MAP.get(categoria, categoria)
+
+    # Mapeia subcategoria usando chave composta
+    chave = f'{categoria}|{subcategoria}'
+    nova_subcategoria = SUBCATEGORIA_MAP.get(chave, subcategoria)
+
+    return nova_categoria, nova_subcategoria
+
 
 def parse_number(value):
     if value is None:
@@ -84,13 +129,19 @@ def main():
             reader = csv.DictReader(handle)
             validate_columns(reader.fieldnames, path)
             for row in reader:
+                categoria_raw = row.get('categoria', '').strip()
+                subcategoria_raw = row.get('subcategoria', '').strip()
+
+                # Normaliza nomenclatura antiga para nova
+                categoria, subcategoria = normalizar_nomenclatura(categoria_raw, subcategoria_raw)
+
                 registro = {
                     'ano': int(row['ano']) if row.get('ano') else None,
                     'nivel': row.get('nivel', '').strip(),
                     'territorio': row.get('territorio', '').strip(),
                     'territorio_codigo': row.get('territorio_codigo', '').strip(),
-                    'categoria': row.get('categoria', '').strip(),
-                    'subcategoria': row.get('subcategoria', '').strip(),
+                    'categoria': categoria,
+                    'subcategoria': subcategoria,
                     'classe': row.get('classe', '').strip(),
                     'preco': parse_number(row.get('preco')),
                     'unidade': row.get('unidade', '').strip(),

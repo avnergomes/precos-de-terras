@@ -36,10 +36,7 @@
       "Municipio"
     ],
     "categorias": [
-      "Arenosa",
-      "Classe de Capacidade de Uso",
-      "Mista",
-      "Roxa"
+      "Classe de Capacidade de Uso"
     ],
     "subcategorias": [
       "A-I",
@@ -48,11 +45,7 @@
       "A-IV",
       "B-VI",
       "B-VII",
-      "C-VIII",
-      "Inaproveitáveis",
-      "Mecanizada",
-      "Mecanizável",
-      "Não Mecanizável"
+      "C-VIII"
     ],
     "classes": [],
     "territorios": {

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { normalizarDados } from '../utils/nomenclatura';
 
 const BASE_URL = import.meta.env.BASE_URL || '/';
 
@@ -86,17 +85,14 @@ export function useData() {
         }
 
         const detailedData = await detailedRes.json();
-
-        // Normaliza os dados para unificar nomenclatura antiga e nova
-        const detailedNormalized = normalizarDados(detailedData || []);
-        setDetailed(detailedNormalized);
+        setDetailed(detailedData || []);
 
         if (aggregatedRes.ok) {
           const aggregatedData = await aggregatedRes.json();
           setAggregated(aggregatedData);
-          setMetadata(buildMetadata(detailedNormalized, aggregatedData));
+          setMetadata(buildMetadata(detailedData, aggregatedData));
         } else {
-          setMetadata(buildMetadata(detailedNormalized, null));
+          setMetadata(buildMetadata(detailedData, null));
         }
 
         if (geoRes.ok) {
