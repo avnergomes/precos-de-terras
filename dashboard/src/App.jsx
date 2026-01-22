@@ -88,7 +88,7 @@ export default function App() {
         <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
 
         {activeTab === 'pesquisa' && (
-          <PriceSearch metadata={metadata} />
+          <PriceSearch metadata={metadata} detailed={detailed} />
         )}
 
         {!hasData && activeTab !== 'pesquisa' && (

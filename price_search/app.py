@@ -14,24 +14,70 @@ def extrair_preco(texto):
   return match.group(0) if match else None
 
 
+CLASSE_TERMS = {
+  "A-I": "classe I lavoura",
+  "A-II": "classe II lavoura",
+  "A-III": "classe III lavoura",
+  "A-IV": "classe IV lavoura",
+  "B-V": "classe V pastagem",
+  "B-VI": "classe VI pastagem",
+  "B-VII": "classe VII pastagem",
+  "C-VIII": "classe VIII preservacao",
+}
+
+
+def montar_query(municipio, area_total, areas, usar_classes=True):
+  base = f"fazenda {municipio} {int(area_total)} ha preco"
+  if not usar_classes:
+    return base
+
+  classes_com_area = [
+    (classe, float(valor))
+    for classe, valor in (areas or {}).items()
+    if float(valor or 0) > 0
+  ]
+
+  classes_com_area.sort(key=lambda item: item[1], reverse=True)
+  termos = []
+  for classe, _valor in classes_com_area[:3]:
+    termo = CLASSE_TERMS.get(classe)
+    if termo:
+      termos.append(termo)
+
+  if not termos:
+    return base
+
+  return f"{base} {' '.join(termos)}"
+
+
+def executar_busca(query, max_results):
+  try:
+    with DDGS() as ddgs:
+      return list(ddgs.text(query, max_results=max_results))
+  except Exception:
+    return []
+
+
 def buscar_anuncios(municipio, area_total, areas, max_results=6):
-  query = f"fazenda {municipio} {int(area_total)} ha preco"
   anuncios = []
+  query_com_classes = montar_query(municipio, area_total, areas, usar_classes=True)
+  resultados = executar_busca(query_com_classes, max_results)
 
-  with DDGS() as ddgs:
-    results = ddgs.text(query, max_results=max_results)
+  if not resultados:
+    query_total = montar_query(municipio, area_total, areas, usar_classes=False)
+    resultados = executar_busca(query_total, max_results)
 
-    for resultado in results:
-      link = resultado.get("href") or resultado.get("url") or ""
-      titulo = resultado.get("title") or resultado.get("heading") or "Anuncio sem titulo"
-      snippet = resultado.get("body") or resultado.get("snippet") or ""
-      preco = extrair_preco(snippet)
-      anuncios.append({
-        "titulo": titulo,
-        "preco": preco,
-        "area": None,
-        "link": link
-      })
+  for resultado in resultados:
+    link = resultado.get("href") or resultado.get("url") or ""
+    titulo = resultado.get("title") or resultado.get("heading") or "Anuncio sem titulo"
+    snippet = resultado.get("body") or resultado.get("snippet") or ""
+    preco = extrair_preco(snippet)
+    anuncios.append({
+      "titulo": titulo,
+      "preco": preco,
+      "area": None,
+      "link": link
+    })
 
   return anuncios
 

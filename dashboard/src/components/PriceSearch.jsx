@@ -14,7 +14,13 @@ function normalizeAreas(areas) {
   }, {});
 }
 
-export default function PriceSearch({ metadata }) {
+function formatBRL(value) {
+  if (!Number.isFinite(value)) return 'R$ 0,00';
+  const formatted = value.toFixed(2).replace('.', ',');
+  return `R$ ${formatted}`;
+}
+
+export default function PriceSearch({ metadata, detailed }) {
   const [municipio, setMunicipio] = useState('');
   const [areas, setAreas] = useState(INITIAL_AREAS);
   const [totalArea, setTotalArea] = useState(0);
@@ -76,6 +82,44 @@ export default function PriceSearch({ metadata }) {
   if (!metadata) return null;
 
   const resultadosExibidos = resultados.slice(0, 6);
+  const deralEstimate = useMemo(() => {
+    if (!municipio || !detailed?.length) return null;
+    const rows = detailed.filter(row =>
+      row.nivel === 'Municipio' &&
+      row.territorio === municipio &&
+      Object.prototype.hasOwnProperty.call(CLASSE_LABELS, row.subcategoria)
+    );
+    if (!rows.length) return null;
+
+    const latestYear = Math.max(...rows.map(row => row.ano || 0));
+    const latestRows = rows.filter(row => row.ano === latestYear);
+    const totals = {};
+    const counts = {};
+
+    latestRows.forEach(row => {
+      if (!Number.isFinite(row.preco)) return;
+      totals[row.subcategoria] = (totals[row.subcategoria] || 0) + row.preco;
+      counts[row.subcategoria] = (counts[row.subcategoria] || 0) + 1;
+    });
+
+    const prices = Object.keys(totals).reduce((acc, classe) => {
+      acc[classe] = totals[classe] / counts[classe];
+      return acc;
+    }, {});
+
+    const total = Object.entries(areas).reduce((acc, [classe, valor]) => {
+      const area = parseFloat(valor) || 0;
+      const preco = prices[classe];
+      if (!Number.isFinite(preco)) return acc;
+      return acc + area * preco;
+    }, 0);
+
+    return {
+      total,
+      ano: latestYear,
+      hasPrices: Object.keys(prices).length > 0,
+    };
+  }, [municipio, detailed, areas]);
 
   return (
     <div className="card p-4 md:p-6 space-y-6">
@@ -136,6 +180,20 @@ export default function PriceSearch({ metadata }) {
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="text-lg font-medium text-earth-700">
             Total: <span className="font-bold text-earth-900">{totalArea.toFixed(2)} ha</span>
+          </div>
+          <div className="text-sm text-earth-600">
+            {municipio ? (
+              deralEstimate?.hasPrices ? (
+                <>
+                  Estimativa DERAL ({deralEstimate.ano}):{' '}
+                  <span className="font-semibold text-earth-900">{formatBRL(deralEstimate.total)}</span>
+                </>
+              ) : (
+                <span>Sem dados DERAL para o municipio selecionado.</span>
+              )
+            ) : (
+              <span>Selecione um municipio para ver a estimativa DERAL.</span>
+            )}
           </div>
           <button
             disabled={!canSearch}
