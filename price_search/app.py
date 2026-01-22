@@ -14,6 +14,18 @@ def extrair_preco(texto):
   return match.group(0) if match else None
 
 
+def extrair_area(texto):
+  if not texto:
+    return None
+  match = re.search(r"(\\d+[\\.,]?\\d*)\\s?(ha|hectare|hectares|alqueire|alqueires)", texto, re.IGNORECASE)
+  if match:
+    return f\"{match.group(1)} {match.group(2)}\"
+  match = re.search(r"(\\d+[\\.,]?\\d*)\\s?m2", texto, re.IGNORECASE)
+  if match:
+    return f\"{match.group(1)} m2\"
+  return None
+
+
 CLASSE_TERMS = {
   "A-I": "classe I lavoura",
   "A-II": "classe II lavoura",
@@ -25,9 +37,66 @@ CLASSE_TERMS = {
   "C-VIII": "classe VIII preservacao",
 }
 
+GOOD_KEYWORDS = [
+  "fazenda",
+  "sitio",
+  "sítio",
+  "chacara",
+  "chácara",
+  "imovel rural",
+  "imóvel rural",
+  "propriedade rural",
+  "area rural",
+  "à venda",
+  "a venda",
+  "vende",
+]
+
+BAD_KEYWORDS = [
+  "wikipedia",
+  "imdb",
+  "netflix",
+  "prime video",
+  "disney",
+  "serie",
+  "série",
+  "filme",
+  "documentario",
+  "documentário",
+  "restaurant",
+  "restaurante",
+  "bar & grill",
+  "steam",
+  "game",
+  "tv",
+]
+
+BAD_DOMAINS = [
+  "wikipedia.org",
+  "imdb.com",
+  "britannica.com",
+  "netflix.com",
+  "primevideo.com",
+  "disneyplus.com",
+]
+
+
+def is_bad_result(link, titulo, snippet):
+  text = f\"{titulo} {snippet}\".lower()
+  if any(keyword in text for keyword in BAD_KEYWORDS):
+    return True
+  if any(domain in link for domain in BAD_DOMAINS):
+    return True
+  return False
+
+
+def is_good_result(titulo, snippet):
+  text = f\"{titulo} {snippet}\".lower()
+  return any(keyword in text for keyword in GOOD_KEYWORDS)
+
 
 def montar_query(municipio, area_total, areas, usar_classes=True):
-  base = f"fazenda {municipio} preco"
+  base = f"fazenda a venda {municipio} imovel rural preco"
   if not usar_classes:
     return base
 
@@ -60,25 +129,38 @@ def executar_busca(query, max_results):
 
 def buscar_anuncios(municipio, area_total, areas, max_results=6):
   anuncios = []
-  query_com_classes = montar_query(municipio, area_total, areas, usar_classes=True)
-  resultados = executar_busca(query_com_classes, max_results)
+  queries = [
+    montar_query(municipio, area_total, areas, usar_classes=True),
+    montar_query(municipio, area_total, areas, usar_classes=False),
+    f"sitio a venda {municipio} preco",
+    f"chacara a venda {municipio} preco",
+  ]
 
-  if not resultados:
-    query_total = montar_query(municipio, area_total, areas, usar_classes=False)
-    resultados = executar_busca(query_total, max_results)
+  resultados = []
+  for query in queries:
+    resultados = executar_busca(query, max_results=max_results * 2)
+    if resultados:
+      break
 
   for resultado in resultados:
     link = resultado.get("href") or resultado.get("url") or ""
     titulo = resultado.get("title") or resultado.get("heading") or "Anuncio sem titulo"
     snippet = resultado.get("body") or resultado.get("snippet") or ""
+    if is_bad_result(link, titulo, snippet):
+      continue
+    if not is_good_result(titulo, snippet) and not extrair_preco(snippet):
+      continue
     preco = extrair_preco(snippet)
+    area = extrair_area(snippet)
     anuncios.append({
       "titulo": titulo,
       "preco": preco,
-      "area": None,
+      "area": area,
       "link": link,
       "municipio": municipio
     })
+    if len(anuncios) >= max_results:
+      break
 
   return anuncios
 
