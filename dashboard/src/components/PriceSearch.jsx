@@ -91,21 +91,19 @@ export default function PriceSearch({ metadata, detailed }) {
     );
     if (!rows.length) return null;
 
-    const latestYear = Math.max(...rows.map(row => row.ano || 0));
-    const latestRows = rows.filter(row => row.ano === latestYear);
-    const totals = {};
-    const counts = {};
+    const prices = {};
+    const yearsByClass = {};
 
-    latestRows.forEach(row => {
+    rows.forEach(row => {
       if (!Number.isFinite(row.preco)) return;
-      totals[row.subcategoria] = (totals[row.subcategoria] || 0) + row.preco;
-      counts[row.subcategoria] = (counts[row.subcategoria] || 0) + 1;
+      const classe = row.subcategoria;
+      const year = row.ano || 0;
+      const currentYear = yearsByClass[classe] || 0;
+      if (year >= currentYear) {
+        yearsByClass[classe] = year;
+        prices[classe] = row.preco;
+      }
     });
-
-    const prices = Object.keys(totals).reduce((acc, classe) => {
-      acc[classe] = totals[classe] / counts[classe];
-      return acc;
-    }, {});
 
     const weightedTotal = Object.entries(areas).reduce((acc, [classe, valor]) => {
       const area = parseFloat(valor) || 0;
@@ -115,11 +113,18 @@ export default function PriceSearch({ metadata, detailed }) {
     }, 0);
 
     const weightedAvg = totalArea > 0 ? weightedTotal / totalArea : 0;
+    const years = Object.values(yearsByClass).filter(Boolean);
+    if (!years.length) {
+      return { total: 0, media: 0, ano: null, hasPrices: false };
+    }
+    const minYear = Math.min(...years);
+    const maxYear = Math.max(...years);
+    const yearLabel = minYear === maxYear ? String(maxYear) : `${minYear}-${maxYear}`;
 
     return {
       total: weightedTotal,
       media: weightedAvg,
-      ano: latestYear,
+      ano: yearLabel,
       hasPrices: Object.keys(prices).length > 0,
     };
   }, [municipio, detailed, areas, totalArea]);
@@ -188,7 +193,7 @@ export default function PriceSearch({ metadata, detailed }) {
             {municipio ? (
               deralEstimate?.hasPrices ? (
                 <>
-                  Estimativa DERAL ({deralEstimate.ano}):{' '}
+                  Estimativa DERAL (ref. {deralEstimate.ano}):{' '}
                   <span className="font-semibold text-earth-900">
                     {formatBRL(deralEstimate.media)}/ha
                   </span>
