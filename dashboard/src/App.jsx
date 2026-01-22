@@ -12,6 +12,7 @@ import CategoryChartSimple from './components/CategoryChartSimple';
 import TerritoryChart from './components/TerritoryChart';
 import RankingTable from './components/RankingTable';
 import MapChart from './components/MapChart';
+import PriceSearch from './components/PriceSearch';
 import Footer from './components/Footer';
 import Loading from './components/Loading';
 
@@ -86,13 +87,17 @@ export default function App() {
 
         <Tabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-        {!hasData && (
+        {activeTab === 'pesquisa' && (
+          <PriceSearch metadata={metadata} />
+        )}
+
+        {!hasData && activeTab !== 'pesquisa' && (
           <div className="card p-6 text-center text-sm text-neutral-500">
             Sem dados para o conjunto de filtros selecionado.
           </div>
         )}
 
-        {hasData && (
+        {hasData && activeTab !== 'pesquisa' && (
           <div className="space-y-6">
             {activeTab === 'overview' && (
               <>

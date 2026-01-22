@@ -4,6 +4,7 @@ const tabs = [
   { id: 'categorias', label: 'Categorias' },
   { id: 'territorial', label: 'Territorial' },
   { id: 'mapa', label: 'Mapa' },
+  { id: 'pesquisa', label: 'Pesquisa de preco' },
 ];
 
 export default function Tabs({ activeTab, onTabChange }) {

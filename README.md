@@ -61,6 +61,21 @@ npm install
 npm run dev
 ```
 
+## Pesquisa de preco
+O frontend possui a aba "Pesquisa de preco" que chama um backend via `POST /api/search`.
+O backend de referencia fica em `price_search/` e pode ser executado localmente.
+
+```bash
+cd price_search
+python -m pip install -r requirements.txt
+uvicorn app:app --reload --port 8000
+```
+
+Configure a variavel de ambiente no frontend (ex.: `dashboard/.env.local`):
+```
+VITE_PRICE_SEARCH_URL=http://localhost:8000
+```
+
 ## GitHub Pages
 O deploy em Pages eh feito via GitHub Actions com build do dashboard.
 Garanta que o Pages esteja configurado para usar "GitHub Actions".

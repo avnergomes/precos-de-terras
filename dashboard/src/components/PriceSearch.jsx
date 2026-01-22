@@ -1,0 +1,191 @@
+import { useEffect, useMemo, useState } from 'react';
+import { CLASSE_LABELS } from '../utils/nomenclatura';
+
+const INITIAL_AREAS = Object.keys(CLASSE_LABELS).reduce((acc, classe) => {
+  acc[classe] = 0;
+  return acc;
+}, {});
+
+function normalizeAreas(areas) {
+  return Object.entries(areas).reduce((acc, [classe, value]) => {
+    const parsed = parseFloat(value);
+    acc[classe] = Number.isFinite(parsed) ? parsed : 0;
+    return acc;
+  }, {});
+}
+
+export default function PriceSearch({ metadata }) {
+  const [municipio, setMunicipio] = useState('');
+  const [areas, setAreas] = useState(INITIAL_AREAS);
+  const [totalArea, setTotalArea] = useState(0);
+  const [resultados, setResultados] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [lastSearch, setLastSearch] = useState(null);
+  const [error, setError] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
+
+  useEffect(() => {
+    const soma = Object.values(areas).reduce((acc, v) => acc + (parseFloat(v) || 0), 0);
+    setTotalArea(soma);
+  }, [areas]);
+
+  const municipios = useMemo(() => {
+    return metadata?.territorios?.Municipio || [];
+  }, [metadata]);
+
+  const apiBase = import.meta.env.VITE_PRICE_SEARCH_URL;
+  const canSearch = Boolean(municipio) && totalArea > 0 && !loading && Boolean(apiBase);
+
+  const handleAreaChange = (classe, valor) => {
+    setAreas(prev => ({ ...prev, [classe]: valor }));
+  };
+
+  const handlePesquisar = async () => {
+    if (!canSearch) return;
+    setLoading(true);
+    setError('');
+    setResultados([]);
+    setHasSearched(true);
+
+    try {
+      const response = await fetch(`${apiBase}/api/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          municipio,
+          areas: normalizeAreas(areas),
+          area_total: totalArea,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Resposta invalida do servidor');
+      }
+
+      const data = await response.json();
+      setResultados(data?.resultados || []);
+      setLastSearch(new Date());
+    } catch (err) {
+      console.error('Erro ao buscar precos:', err);
+      setError('Nao foi possivel concluir a pesquisa agora.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!metadata) return null;
+
+  const resultadosExibidos = resultados.slice(0, 6);
+
+  return (
+    <div className="card p-4 md:p-6 space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="text-xl font-bold">Pesquisa de preco</h2>
+        {!apiBase && (
+          <span className="text-sm text-amber-700 bg-amber-50 px-3 py-1 rounded-full">
+            Configure VITE_PRICE_SEARCH_URL para habilitar a pesquisa
+          </span>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4">
+        <div>
+          <label className="filter-label">Municipio</label>
+          <select
+            value={municipio}
+            onChange={(e) => setMunicipio(e.target.value)}
+            className="filter-select w-full"
+          >
+            <option value="">Selecione um municipio</option>
+            {municipios.map(item => (
+              <option key={item} value={item}>{item}</option>
+            ))}
+          </select>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead>
+              <tr className="text-left text-earth-500">
+                <th className="p-2">Classe</th>
+                <th className="p-2">Descricao</th>
+                <th className="p-2">Area (ha)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.keys(CLASSE_LABELS).map(classe => (
+                <tr key={classe} className="border-t border-earth-100">
+                  <td className="p-2 font-semibold">{classe}</td>
+                  <td className="p-2">{CLASSE_LABELS[classe]}</td>
+                  <td className="p-2">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={areas[classe]}
+                      onChange={(e) => handleAreaChange(classe, e.target.value)}
+                      className="w-28 border border-earth-200 rounded-lg px-2 py-1 focus:ring-2 focus:ring-forest-500/20 focus:border-forest-500"
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="text-lg font-medium text-earth-700">
+            Total: <span className="font-bold text-earth-900">{totalArea.toFixed(2)} ha</span>
+          </div>
+          <button
+            disabled={!canSearch}
+            onClick={handlePesquisar}
+            className="px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:bg-earth-200 disabled:text-earth-500 transition-colors"
+          >
+            {loading ? 'Pesquisando...' : 'Pesquisar'}
+          </button>
+        </div>
+      </div>
+
+      {error && (
+        <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg p-3">
+          {error}
+        </div>
+      )}
+
+      {hasSearched && !loading && resultadosExibidos.length === 0 && !error && (
+        <div className="text-sm text-earth-500">Nenhum resultado encontrado.</div>
+      )}
+
+      {resultadosExibidos.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="font-semibold text-earth-800">Resultados encontrados</h3>
+          <div className="grid grid-cols-1 gap-3">
+            {resultadosExibidos.map((item, index) => (
+              <div key={`${item.link || index}`} className="border border-earth-100 rounded-lg p-4">
+                <div className="font-semibold text-earth-900">{item.titulo || 'Anuncio sem titulo'}</div>
+                {item.preco && <div className="text-forest-700">Preco: {item.preco}</div>}
+                {item.area && <div className="text-forest-700">Area: {item.area}</div>}
+                {item.link && (
+                  <a
+                    href={item.link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-forest-600 hover:text-forest-700 underline mt-2"
+                  >
+                    Acessar anuncio
+                  </a>
+                )}
+              </div>
+            ))}
+          </div>
+          {lastSearch && (
+            <div className="text-xs text-earth-500">
+              Ultima pesquisa: {lastSearch.toLocaleString('pt-BR')}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

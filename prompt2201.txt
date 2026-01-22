@@ -1,0 +1,343 @@
+Contexto do repositÃ³rio
+-----------------------
+
+O repositÃ³rio `precosâ€‘deâ€‘terras` possui um dashboard em React/Vite (`dashboard/src/App.jsx`) que carrega dados histÃ³ricos de preÃ§os de terras a partir de JSONs em `dashboard/public/data/â€¦`. O aplicativo usa um componente `Tabs` para alternar entre abas (`VisÃ£o Geral`, `HistÃ³rico`, `Categorias`, `Territorial`, `Mapa`). A seleÃ§Ã£o de recortes territoriais e categorias Ã© feita pelo componente `Filters`, que carrega metadados a partir da funÃ§Ã£o `useData()`. As classes de aptidÃ£o agrÃ­cola estÃ£o definidas em `dashboard/src/utils/nomenclatura.js` como:
+
+* Aâ€‘I â€” lavoura de aptidÃ£o boa (classe I).
+* Aâ€‘II â€” lavoura de aptidÃ£o boa (classe II).
+* Aâ€‘III â€” lavoura de aptidÃ£o regular (classeÂ III).
+* Aâ€‘IV â€” lavoura de aptidÃ£o restrita (classeÂ IV).
+* Bâ€‘V â€” pastagem plantada (classeÂ V).
+* Bâ€‘VI â€” pastagem plantada (classeÂ VI).
+* Bâ€‘VII â€” silvicultura/pastagem natural (classeÂ VII).
+* Câ€‘VIII â€” preservaÃ§Ã£o da flora (classeÂ VIII).
+
+O objetivo Ã© implementar uma nova aba **â€œPesquisa de preÃ§oâ€** onde o usuÃ¡rio possa selecionar um municÃ­pio, informar a Ã¡rea (em hectares) destinada a cada classe de aptidÃ£o agrÃ­cola e, ao clicar em â€œPesquisarâ€, o sistema consulte a internet para retornar uma lista de propriedades semelhantes (6 resultados) com preÃ§o e link de referÃªncia. Esses dados serÃ£o utilizados em projetos de crÃ©dito fundiÃ¡rio.
+
+Requisitos funcionais
+---------------------
+
+1. **SeleÃ§Ã£o do municÃ­pio** â€“ Carregar a lista de municÃ­pios a partir dos metadados jÃ¡ existentes. Utilize `metadata.territorios['Municipio']` para obter uma lista ordenada de municÃ­pios ou derive a lista Ãºnica de valores de `detailed.map(r => r.territorio)` filtrando somente registros com `row.nivel === 'Municipio'`. Exibir um `select` de escolha Ãºnica.
+2. **Entrada de Ã¡reas por classe** â€“ Mostrar uma tabela contendo as 8 classes de aptidÃ£o (`Aâ€‘I`, `Aâ€‘II`, `Aâ€‘III`, `Aâ€‘IV`, `Bâ€‘V`, `Bâ€‘VI`, `Bâ€‘VII`, `Câ€‘VIII`) com um campo numÃ©rico para cada classe (ha). Devem ser aceitos valores decimais positivos. Para ajudar o usuÃ¡rio, mostre o rÃ³tulo completo de cada classe (ex.: â€œLavoura â€“ AptidÃ£o Boa (Classe I)â€) usando `CLASSE_LABELS`. Inicialize todos os campos com zero.
+3. **CÃ¡lculo do total** â€“ Enquanto o usuÃ¡rio preenche, some as Ã¡reas das 8 classes e mostre o total de hectares ao lado do formulÃ¡rio. O botÃ£o â€œPesquisarâ€ sÃ³ deve ficar habilitado se houver um municÃ­pio selecionado e se o total de Ã¡rea for maior que zero.
+4. **Acionamento da pesquisa** â€“ Ao clicar em â€œPesquisarâ€, chamar um endpoint backend passando:
+   - `municipio`: string.
+   - `areas`: objeto/dicionÃ¡rio mapeando cada classe (`A-I`, `A-II` etc.) para o valor numÃ©rico informado.
+   - `area_total`: soma das Ã¡reas (pode ser Ãºtil para ajustar a pesquisa).
+   - Opcionalmente, o cÃ³digo da classe ou a descriÃ§Ã£o.
+5. **ExibiÃ§Ã£o de resultados** â€“ Mostrar uma lista ou tabela com atÃ© 6 propriedades encontradas. Para cada item exibir: tÃ­tulo do anÃºncio/imÃ³vel, preÃ§o (valor monetÃ¡rio), Ã¡rea anunciada (quando disponÃ­vel), e link para o anÃºncio. OfereÃ§a um botÃ£o ou link que abra cada resultado em nova aba. Caso nÃ£o seja possÃ­vel extrair o preÃ§o de alguma fonte, exibir a descriÃ§Ã£o capturada ou deixar o campo em branco. ApÃ³s a lista, mostre a data/hora da Ãºltima pesquisa.
+6. **UI integrada ao dashboard** â€“ A nova aba deve seguir o estilo existente (classes utilitÃ¡rias Tailwind). O formulÃ¡rio e resultados podem ser incluÃ­dos dentro de um `<div className="card pâ€‘4 md:pâ€‘6">` para manter a consistÃªncia visual.
+
+Estrutura de arquivos proposta
+------------------------------
+
+### Frontâ€‘end (React/Vite)
+
+1. **Criar `dashboard/src/components/PriceSearch.jsx`**  
+   Este componente Ã© responsÃ¡vel pela interface da nova aba. Estrutura sugerida:
+
+```jsx
+import { useState, useEffect } from 'react';
+import { CLASSE_LABELS } from '../utils/nomenclatura';
+
+export default function PriceSearch({ metadata }) {
+  const [municipio, setMunicipio] = useState('');
+  const [areas, setAreas] = useState(() => {
+    const init = {};
+    Object.keys(CLASSE_LABELS).forEach(classe => { init[classe] = 0; });
+    return init;
+  });
+  const [totalArea, setTotalArea] = useState(0);
+  const [resultados, setResultados] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // Atualiza total sempre que as Ã¡reas mudam
+  useEffect(() => {
+    const soma = Object.values(areas).reduce((acc, v) => acc + (parseFloat(v) || 0), 0);
+    setTotalArea(soma);
+  }, [areas]);
+
+  const handleAreaChange = (classe, valor) => {
+    setAreas(prev => ({ ...prev, [classe]: valor }));
+  };
+
+  const handlePesquisar = async () => {
+    setLoading(true);
+    setResultados([]);
+    try {
+      const resp = await fetch(`${import.meta.env.VITE_PRICE_SEARCH_URL}/api/search`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          municipio,
+          areas,
+          area_total: totalArea,
+        }),
+      });
+      const data = await resp.json();
+      setResultados(data?.resultados || []);
+    } catch (err) {
+      console.error('Erro ao buscar preÃ§os:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Lista de municÃ­pios a partir do metadata; substitua conforme necessÃ¡rio
+  const municipios = metadata?.territorios?.['Municipio'] || [];
+
+  return (
+    <div className="card p-4 md:p-6 space-y-6">
+      <h2 className="text-xl font-bold">Pesquisa de preÃ§o</h2>
+
+      {/* SeleÃ§Ã£o de municÃ­pio */}
+      <div>
+        <label className="block mb-1 font-medium">MunicÃ­pio</label>
+        <select
+          value={municipio}
+          onChange={(e) => setMunicipio(e.target.value)}
+          className="filter-select w-full"
+        >
+          <option value="">Selecione um municÃ­pio</option>
+          {municipios.map(m => (
+            <option key={m} value={m}>{m}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Tabela de Ã¡reas por classe */}
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr>
+              <th className="text-left p-2">Classe</th>
+              <th className="text-left p-2">DescriÃ§Ã£o</th>
+              <th className="text-left p-2">Ãrea (ha)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Object.keys(CLASSE_LABELS).map(classe => (
+              <tr key={classe} className="border-t">
+                <td className="p-2 font-semibold">{classe}</td>
+                <td className="p-2">{CLASSE_LABELS[classe]}</td>
+                <td className="p-2">
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={areas[classe]}
+                    onChange={(e) => handleAreaChange(classe, e.target.value)}
+                    className="w-28 border rounded px-2 py-1"
+                  />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Total e botÃ£o pesquisar */}
+      <div className="flex items-center justify-between">
+        <div className="text-lg font-medium">
+          Total: <span className="font-bold">{totalArea.toFixed(2)} ha</span>
+        </div>
+        <button
+          disabled={!municipio || totalArea <= 0 || loading}
+          onClick={handlePesquisar}
+          className="px-4 py-2 bg-primary-600 text-white rounded-lg disabled:bg-primary-200"
+        >
+          {loading ? 'Pesquisando...' : 'Pesquisar'}
+        </button>
+      </div>
+
+      {/* Resultados */}
+      {resultados.length > 0 && (
+        <div>
+          <h3 className="font-semibold mb-2">Resultados encontrados</h3>
+          <ul className="space-y-2">
+            {resultados.map((item, idx) => (
+              <li key={idx} className="border rounded-lg p-3">
+                <div className="font-bold">{item.titulo}</div>
+                {item.preco && <div className="text-forest-700">PreÃ§o: {item.preco}</div>}
+                {item.area && <div className="text-forest-700">Ãrea: {item.area}</div>}
+                <a href={item.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+                  Acessar anÃºncio
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+2. **Atualizar `dashboard/src/components/Tabs.jsx`**  
+   Adicionar um item Ã  constante `tabs`:
+
+```jsx
+const tabs = [
+  { id: 'overview', label: 'VisÃ£o Geral' },
+  { id: 'historico', label: 'HistÃ³rico' },
+  { id: 'categorias', label: 'Categorias' },
+  { id: 'territorial', label: 'Territorial' },
+  { id: 'mapa', label: 'Mapa' },
+  { id: 'pesquisa', label: 'Pesquisa de preÃ§o' }, // novo
+];
+```
+
+3. **Alterar `dashboard/src/App.jsx`**  
+   Importar o novo componente e adicionar um bloco para renderizÃ¡â€‘lo quando a aba ativa for `'pesquisa'`:
+
+```jsx
+import PriceSearch from './components/PriceSearch';
+
+// dentro do JSX onde as tabs sÃ£o renderizadas:
+{activeTab === 'pesquisa' && (
+  <PriceSearch metadata={metadata} />
+)}
+```
+
+TambÃ©m passe `metadata` como propriedade para que o componente possa listar municÃ­pios sem recarregar dados.
+
+4. **VariÃ¡vel de ambiente**  
+   Definir no `.env` ou diretamente no cÃ³digo o endereÃ§o do backend que executarÃ¡ a pesquisa. Por exemplo:
+
+```
+# .env.local ou .env
+VITE_PRICE_SEARCH_URL=https://YOUR_STREAMLIT_APP_URL
+```
+
+O Vite automaticamente expÃµe variÃ¡veis que comeÃ§am com `VITE_` em `import.meta.env`. Substitua `YOUR_STREAMLIT_APP_URL` pela URL do app (ver abaixo).
+
+### Backâ€‘end de pesquisa (Python)
+
+Crie um diretÃ³rio, por exemplo `price_search/`, com um pequeno aplicativo em Streamlit (`app.py`) que atue como serviÃ§o de pesquisa e interface isolada (opcional). Uma soluÃ§Ã£o com Streamlit Cloud permite rodar Python sem modificar o host estÃ¡tico do GitHub Pages. Estrutura sugerida:
+
+```
+price_search/
+â”œâ”€â”€ app.py
+â”œâ”€â”€ requirements.txt
+â””â”€â”€ README.md
+```
+
+**`requirements.txt`** deve listar as dependÃªncias mÃ­nimas, por exemplo:
+
+```
+streamlit
+requests
+beautifulsoup4
+duckduckgo_search  # ou googlesearch-python
+python-dotenv
+```
+
+**`app.py`** contÃ©m duas partes: uma API REST simples e a interface para testes via Streamlit. Exemplo:
+
+```python
+import streamlit as st
+import requests
+from bs4 import BeautifulSoup
+import re
+import json
+from duckduckgo_search import ddg  # biblioteca para fazer buscas na web
+
+# FunÃ§Ã£o utilitÃ¡ria para buscar anÃºncios
+def buscar_anuncios(municipio: str, area_total: float, areas: dict, max_results: int = 6):
+    # Formar a consulta de pesquisa. Use o total de hectares para buscar propriedades de porte similar.
+    query = f"fazenda {municipio} {int(area_total)} ha preÃ§o site:olx.com.br"
+    results = ddg(query, max_results=max_results)
+    anuncios = []
+    if results:
+        for r in results:
+            link = r["href"]
+            titulo = r["title"]
+            snippet = r["body"]
+            # tentar extrair preÃ§o do snippet usando regex
+            preco_match = re.search(r"R\\$\\s?([\\d\\.]+,\\d+)", snippet)
+            preco = preco_match.group(0) if preco_match else None
+            anuncios.append({
+                "titulo": titulo,
+                "preco": preco,
+                "area": None,
+                "link": link
+            })
+    return anuncios
+
+# Interface grÃ¡fica (Streamlit)
+def main():
+    st.title("Pesquisa de PreÃ§o de Terras")
+    st.write("Selecione o municÃ­pio e informe as Ã¡reas em ha para cada classe de aptidÃ£o.")
+
+    # Carregar lista de municÃ­pios de um arquivo JSON exportado do dashboard (ex: price_search/municipios.json)
+    municipios = json.load(open("municipios.json"))
+
+    municipio = st.selectbox("MunicÃ­pio", options=municipios)
+    areas = {}
+    col1, col2 = st.columns(2)
+    total_area = 0
+    with col1:
+        for classe in ["A-I", "A-II", "A-III", "A-IV"]:
+            val = st.number_input(f"{classe} (ha)", min_value=0.0, step=0.01)
+            areas[classe] = val
+            total_area += val
+    with col2:
+        for classe in ["B-V", "B-VI", "B-VII", "C-VIII"]:
+            val = st.number_input(f"{classe} (ha)", min_value=0.0, step=0.01)
+            areas[classe] = val
+            total_area += val
+
+    st.write(f"**Total:** {total_area:.2f} ha")
+
+    if st.button("Pesquisar") and municipio and total_area > 0:
+        with st.spinner("Buscando propriedades..."):
+            resultados = buscar_anuncios(municipio, total_area, areas)
+        st.success(f"Foram encontrados {len(resultados)} anÃºncios.")
+        for item in resultados:
+            st.markdown(f"* **{item['titulo']}** â€” {item['preco'] or 'sem preÃ§o'}")
+            st.markdown(f"  <{item['link']}>", unsafe_allow_html=True)
+            st.markdown("---")
+
+if __name__ == "__main__":
+    main()
+```
+
+Esse arquivo utiliza a biblioteca `duckduckgo_search` para obter os links. Use outra API de busca (por exemplo `googlesearch`) se preferir, desde que respeite termos de uso. Ã‰ possÃ­vel ampliar `buscar_anuncios()` para raspar sites especÃ­ficos (OLX, ImovelWeb, VivaReal), buscando padrÃ£o de preÃ§o e Ã¡rea com `BeautifulSoup`.
+
+**Como servir como API**: Streamlit permite criar rotas personalizadas usando [st.experimental_singleton]/[st.experimental_memo] ou via `fastapi` acoplado. Uma abordagem simples Ã© incluir no `app.py` um bloco como:
+
+```python
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["POST"],
+    allow_headers=["*"],
+)
+
+@app.post("/api/search")
+async def search(payload: dict):
+    municipio = payload.get("municipio", "")
+    areas = payload.get("areas", {})
+    area_total = payload.get("area_total", 0)
+    resultados = buscar_anuncios(municipio, area_total, areas)
+    return {"resultados": resultados}
+```
+
+E rodar com `uvicorn app:app`. Para evitar mudar a hospedagem, vocÃª pode publicar essa API gratuitamente no Streamlit Cloud usando `st.experimental_rerun` ou adicionar um `Procfile` para Heroku/Replit. ApÃ³s publicar, configure a variÃ¡vel `VITE_PRICE_SEARCH_URL` no frontâ€‘end com a URL base (ex.: `https://precos-terras.streamlit.app`).
+
+Outras alternativas
+-------------------
+
+* **API sem servidor externo** â€“ se desejar evitar um backend fora do GitHub, podeâ€‘se usar a API do Google Custom Search ou SerpAPI diretamente no React. Seria necessÃ¡rio obter uma chave de API e armazenÃ¡â€‘la em variÃ¡vel de ambiente (`VITE_SERPAPI_KEY`). O componente `PriceSearch` faria a chamada usando `fetch("https://serpapi.com/search?api_key=...&q=...")` e processaria os resultados.  
+* **Uso de Netlify Functions/Vercel Functions** â€“ adicionar um diretÃ³rio `netlify/functions/search.js` com cÃ³digo Node que busca anÃºncios (usando `axios` e `cheerio`). Netlify oferece hospedagem gratuita e integra automaticamente endpoints para sites estÃ¡ticos hospedados pelo GitHub. Essa opÃ§Ã£o tambÃ©m evita Streamlit Cloud.
+
+ConsideraÃ§Ãµes finais
+--------------------
+
+* A lÃ³gica de busca de anÃºncios deve ser robusta a pÃ¡ginas que nÃ£o divulguem preÃ§o ou que exijam Javascript para carregar dados. Limiteâ€‘se a fontes pÃºblicas onde os dados estejam no HTML.
+* Respeite os termos de uso dos sites consultados. Evite requisiÃ§Ãµes em massa e inclua `User-Agent` adequado.
+* Atualize a documentaÃ§Ã£o do repositÃ³rio (`README.md`) explicando como rodar localmente o backend (`python -m pip install -r requirements.txt` e `streamlit run app.py`) e como configurar a variÃ¡vel de ambiente `VITE_PRICE_SEARCH_URL` para apontar para o serviÃ§o de pesquisa.
