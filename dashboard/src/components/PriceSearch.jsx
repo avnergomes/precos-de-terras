@@ -107,19 +107,22 @@ export default function PriceSearch({ metadata, detailed }) {
       return acc;
     }, {});
 
-    const total = Object.entries(areas).reduce((acc, [classe, valor]) => {
+    const weightedTotal = Object.entries(areas).reduce((acc, [classe, valor]) => {
       const area = parseFloat(valor) || 0;
       const preco = prices[classe];
       if (!Number.isFinite(preco)) return acc;
       return acc + area * preco;
     }, 0);
 
+    const weightedAvg = totalArea > 0 ? weightedTotal / totalArea : 0;
+
     return {
-      total,
+      total: weightedTotal,
+      media: weightedAvg,
       ano: latestYear,
       hasPrices: Object.keys(prices).length > 0,
     };
-  }, [municipio, detailed, areas]);
+  }, [municipio, detailed, areas, totalArea]);
 
   return (
     <div className="card p-4 md:p-6 space-y-6">
@@ -186,7 +189,9 @@ export default function PriceSearch({ metadata, detailed }) {
               deralEstimate?.hasPrices ? (
                 <>
                   Estimativa DERAL ({deralEstimate.ano}):{' '}
-                  <span className="font-semibold text-earth-900">{formatBRL(deralEstimate.total)}</span>
+                  <span className="font-semibold text-earth-900">
+                    {formatBRL(deralEstimate.media)}/ha
+                  </span>
                 </>
               ) : (
                 <span>Sem dados DERAL para o municipio selecionado.</span>
@@ -212,7 +217,9 @@ export default function PriceSearch({ metadata, detailed }) {
       )}
 
       {hasSearched && !loading && resultadosExibidos.length === 0 && !error && (
-        <div className="text-sm text-earth-500">Nenhum resultado encontrado.</div>
+        <div className="text-sm text-earth-500">
+          Nenhum resultado encontrado na pesquisa online.
+        </div>
       )}
 
       {resultadosExibidos.length > 0 && (
@@ -242,6 +249,21 @@ export default function PriceSearch({ metadata, detailed }) {
               Ultima pesquisa: {lastSearch.toLocaleString('pt-BR')}
             </div>
           )}
+        </div>
+      )}
+
+      {deralEstimate?.hasPrices && totalArea > 0 && (
+        <div className="border border-earth-100 rounded-lg p-4 bg-earth-50/60">
+          <div className="font-semibold text-earth-800">Estimativa DERAL (ponderada)</div>
+          <div className="text-sm text-earth-600">
+            Ano de referencia: {deralEstimate.ano}
+          </div>
+          <div className="text-sm text-earth-700 mt-2">
+            Media ponderada: <span className="font-semibold">{formatBRL(deralEstimate.media)}/ha</span>
+          </div>
+          <div className="text-sm text-earth-700">
+            Valor total estimado: <span className="font-semibold">{formatBRL(deralEstimate.total)}</span>
+          </div>
         </div>
       )}
     </div>
