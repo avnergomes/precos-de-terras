@@ -1,11 +1,15 @@
 ﻿import json
+import logging
 import re
 import unicodedata
-from datetime import datetime
+from datetime import datetime, timezone
 
 from duckduckgo_search import DDGS
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 def extrair_preco(texto):
@@ -124,9 +128,13 @@ def montar_query(municipio, area_total, areas, usar_classes=True):
 
 def executar_busca(query, max_results):
   try:
+    logger.info(f"Executando busca: {query}")
     with DDGS() as ddgs:
-      return list(ddgs.text(query, max_results=max_results))
-  except Exception:
+      resultados = list(ddgs.text(query, max_results=max_results))
+      logger.info(f"Busca retornou {len(resultados)} resultados")
+      return resultados
+  except Exception as e:
+    logger.error(f"Erro na busca DuckDuckGo: {type(e).__name__}: {e}")
     return []
 
 
@@ -140,18 +148,25 @@ def buscar_anuncios(municipio, area_total, areas, max_results=6):
   ]
 
   resultados = []
-  for query in queries:
+  for i, query in enumerate(queries):
+    logger.info(f"Tentando query {i+1}/{len(queries)}")
     resultados = executar_busca(query, max_results=max_results * 2)
     if resultados:
+      logger.info(f"Query {i+1} retornou resultados")
       break
+    logger.info(f"Query {i+1} sem resultados, tentando proxima...")
 
+  filtrados_bad = 0
+  filtrados_not_good = 0
   for resultado in resultados:
     link = resultado.get("href") or resultado.get("url") or ""
     titulo = resultado.get("title") or resultado.get("heading") or "Anuncio sem titulo"
     snippet = resultado.get("body") or resultado.get("snippet") or ""
     if is_bad_result(link, titulo, snippet):
+      filtrados_bad += 1
       continue
     if not is_good_result(titulo, snippet) and not extrair_preco(snippet):
+      filtrados_not_good += 1
       continue
     preco = extrair_preco(snippet)
     area = extrair_area(snippet)
@@ -165,6 +180,7 @@ def buscar_anuncios(municipio, area_total, areas, max_results=6):
     if len(anuncios) >= max_results:
       break
 
+  logger.info(f"Resultados: {len(resultados)} brutos, {filtrados_bad} removidos (bad), {filtrados_not_good} removidos (not good), {len(anuncios)} finais")
   return anuncios
 
 
@@ -182,10 +198,12 @@ async def search(payload: dict):
   municipio = payload.get("municipio", "")
   areas = payload.get("areas", {})
   area_total = payload.get("area_total", 0)
+  logger.info(f"Busca recebida - municipio: {municipio}, area_total: {area_total}")
   resultados = buscar_anuncios(municipio, area_total, areas)
+  logger.info(f"Busca finalizada - {len(resultados)} anuncios encontrados")
   return {
     "resultados": resultados,
-    "timestamp": datetime.utcnow().isoformat() + "Z"
+    "timestamp": datetime.now(timezone.utc).isoformat()
   }
 
 
