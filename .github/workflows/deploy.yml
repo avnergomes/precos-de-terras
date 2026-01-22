@@ -31,6 +31,8 @@ jobs:
 
       - name: Build
         working-directory: dashboard
+        env:
+          VITE_PRICE_SEARCH_URL: https://precos-de-terras-search.onrender.com
         run: npm run build
 
       - name: Upload artifact
