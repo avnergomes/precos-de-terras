@@ -19,10 +19,10 @@ def extrair_area(texto):
     return None
   match = re.search(r"(\\d+[\\.,]?\\d*)\\s?(ha|hectare|hectares|alqueire|alqueires)", texto, re.IGNORECASE)
   if match:
-    return f\"{match.group(1)} {match.group(2)}\"
+    return f"{match.group(1)} {match.group(2)}"
   match = re.search(r"(\\d+[\\.,]?\\d*)\\s?m2", texto, re.IGNORECASE)
   if match:
-    return f\"{match.group(1)} m2\"
+    return f"{match.group(1)} m2"
   return None
 
 
