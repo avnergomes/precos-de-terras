@@ -27,7 +27,7 @@ CLASSE_TERMS = {
 
 
 def montar_query(municipio, area_total, areas, usar_classes=True):
-  base = f"fazenda {municipio} {int(area_total)} ha preco"
+  base = f"fazenda {municipio} preco"
   if not usar_classes:
     return base
 
@@ -76,7 +76,8 @@ def buscar_anuncios(municipio, area_total, areas, max_results=6):
       "titulo": titulo,
       "preco": preco,
       "area": None,
-      "link": link
+      "link": link,
+      "municipio": municipio
     })
 
   return anuncios

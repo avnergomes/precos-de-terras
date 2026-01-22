@@ -234,7 +234,8 @@ export default function PriceSearch({ metadata, detailed }) {
             {resultadosExibidos.map((item, index) => (
               <div key={`${item.link || index}`} className="border border-earth-100 rounded-lg p-4">
                 <div className="font-semibold text-earth-900">{item.titulo || 'Anuncio sem titulo'}</div>
-                {item.preco && <div className="text-forest-700">Preco: {item.preco}</div>}
+                {item.municipio && <div className="text-forest-700">Municipio: {item.municipio}</div>}
+                {item.preco && <div className="text-forest-700">Valor: {item.preco}</div>}
                 {item.area && <div className="text-forest-700">Area: {item.area}</div>}
                 {item.link && (
                   <a
