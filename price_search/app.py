@@ -1,5 +1,6 @@
-import json
+﻿import json
 import re
+import unicodedata
 from datetime import datetime
 
 from duckduckgo_search import DDGS
@@ -40,14 +41,10 @@ CLASSE_TERMS = {
 GOOD_KEYWORDS = [
   "fazenda",
   "sitio",
-  "sítio",
   "chacara",
-  "chácara",
   "imovel rural",
-  "imóvel rural",
   "propriedade rural",
   "area rural",
-  "à venda",
   "a venda",
   "vende",
 ]
@@ -59,10 +56,8 @@ BAD_KEYWORDS = [
   "prime video",
   "disney",
   "serie",
-  "série",
   "filme",
   "documentario",
-  "documentário",
   "restaurant",
   "restaurante",
   "bar & grill",
@@ -81,8 +76,16 @@ BAD_DOMAINS = [
 ]
 
 
+
+def normalize_text(text):
+  if not text:
+    return ""
+  normalized = unicodedata.normalize("NFKD", text)
+  cleaned = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+  return cleaned.lower()
+
 def is_bad_result(link, titulo, snippet):
-  text = f\"{titulo} {snippet}\".lower()
+  text = normalize_text(f"{titulo} {snippet}")
   if any(keyword in text for keyword in BAD_KEYWORDS):
     return True
   if any(domain in link for domain in BAD_DOMAINS):
@@ -91,7 +94,7 @@ def is_bad_result(link, titulo, snippet):
 
 
 def is_good_result(titulo, snippet):
-  text = f\"{titulo} {snippet}\".lower()
+  text = normalize_text(f"{titulo} {snippet}")
   return any(keyword in text for keyword in GOOD_KEYWORDS)
 
 
@@ -238,3 +241,4 @@ def main():
 
 if __name__ == "__main__":
   main()
+
