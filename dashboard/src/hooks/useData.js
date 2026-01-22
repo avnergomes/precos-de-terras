@@ -2,11 +2,24 @@ import { useEffect, useMemo, useState } from 'react';
 
 const BASE_URL = import.meta.env.BASE_URL || '/';
 
-function buildMetadata(detailed, aggregated) {
-  if (aggregated?.metadata) {
-    return aggregated.metadata;
-  }
+function normalizeKey(value) {
+  if (!value) return '';
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function resolveGeoName(props = {}) {
+  return props.nome || props.Nome || props.Municipio || props.municipio || props.territorio || props.name || '';
+}
+
+function buildMetadata(detailed, aggregated, geoData) {
   if (!detailed || detailed.length === 0) {
+    if (aggregated?.metadata) {
+      return filterMunicipiosByGeo(aggregated.metadata, geoData);
+    }
     return {
       anoMin: 0,
       anoMax: 0,
@@ -20,49 +33,79 @@ function buildMetadata(detailed, aggregated) {
     };
   }
 
-  const anosSet = new Set();
-  const niveisSet = new Set();
-  const categoriasSet = new Set();
-  const subcategoriasSet = new Set();
-  const regioesSet = new Set();
-  const mesorregioesSet = new Set();
-  const territorios = {};
+  const baseMetadata = aggregated?.metadata ? aggregated.metadata : null;
 
-  detailed.forEach(row => {
-    if (row.ano) anosSet.add(row.ano);
-    if (row.nivel) niveisSet.add(row.nivel);
-    if (row.categoria) categoriasSet.add(row.categoria);
-    if (row.subcategoria) subcategoriasSet.add(row.subcategoria);
-    if (row.regiao) regioesSet.add(row.regiao);
-    if (row.mesorregiao) mesorregioesSet.add(row.mesorregiao);
+  if (!baseMetadata) {
+    const anosSet = new Set();
+    const niveisSet = new Set();
+    const categoriasSet = new Set();
+    const subcategoriasSet = new Set();
+    const regioesSet = new Set();
+    const mesorregioesSet = new Set();
+    const territorios = {};
 
-    if (row.nivel && row.territorio) {
-      if (!territorios[row.nivel]) {
-        territorios[row.nivel] = new Set();
+    detailed.forEach(row => {
+      if (row.ano) anosSet.add(row.ano);
+      if (row.nivel) niveisSet.add(row.nivel);
+      if (row.categoria) categoriasSet.add(row.categoria);
+      if (row.subcategoria) subcategoriasSet.add(row.subcategoria);
+      if (row.regiao) regioesSet.add(row.regiao);
+      if (row.mesorregiao) mesorregioesSet.add(row.mesorregiao);
+
+      if (row.nivel && row.territorio) {
+        if (!territorios[row.nivel]) {
+          territorios[row.nivel] = new Set();
+        }
+        territorios[row.nivel].add(row.territorio);
       }
-      territorios[row.nivel].add(row.territorio);
-    }
+    });
+
+    const anos = Array.from(anosSet).sort((a, b) => a - b);
+    const anoMin = anos[0] || 0;
+    const anoMax = anos[anos.length - 1] || 0;
+
+    const territoriosSorted = {};
+    Object.entries(territorios).forEach(([nivel, set]) => {
+      territoriosSorted[nivel] = Array.from(set).sort();
+    });
+
+    return filterMunicipiosByGeo({
+      anoMin,
+      anoMax,
+      anos,
+      niveis: Array.from(niveisSet).sort(),
+      categorias: Array.from(categoriasSet).sort(),
+      subcategorias: Array.from(subcategoriasSet).sort(),
+      regioes: Array.from(regioesSet).sort(),
+      mesorregioes: Array.from(mesorregioesSet).sort(),
+      territorios: territoriosSorted,
+    }, geoData);
+  }
+
+  return filterMunicipiosByGeo(baseMetadata, geoData);
+}
+
+function filterMunicipiosByGeo(metadata, geoData) {
+  if (!metadata?.territorios?.Municipio || !geoData?.features?.length) {
+    return metadata;
+  }
+  const geoMunicipios = new Set();
+  geoData.features.forEach(feature => {
+    const props = feature.properties || {};
+    const name = resolveGeoName(props);
+    if (name) geoMunicipios.add(normalizeKey(name));
   });
 
-  const anos = Array.from(anosSet).sort((a, b) => a - b);
-  const anoMin = anos[0] || 0;
-  const anoMax = anos[anos.length - 1] || 0;
-
-  const territoriosSorted = {};
-  Object.entries(territorios).forEach(([nivel, set]) => {
-    territoriosSorted[nivel] = Array.from(set).sort();
-  });
+  const municipios = metadata.territorios.Municipio
+    .filter(item => geoMunicipios.has(normalizeKey(item)))
+    .sort();
 
   return {
-    anoMin,
-    anoMax,
-    anos,
-    niveis: Array.from(niveisSet).sort(),
-    categorias: Array.from(categoriasSet).sort(),
-    subcategorias: Array.from(subcategoriasSet).sort(),
-    regioes: Array.from(regioesSet).sort(),
-    mesorregioes: Array.from(mesorregioesSet).sort(),
-    territorios: territoriosSorted,
+    ...metadata,
+    territorios: {
+      ...metadata.territorios,
+      Municipio: municipios,
+    },
   };
 }
 
@@ -91,17 +134,18 @@ export function useData() {
         const detailedData = await detailedRes.json();
         setDetailed(detailedData || []);
 
+        let geoJson = null;
+        if (geoRes.ok) {
+          geoJson = await geoRes.json();
+          setGeoData(geoJson);
+        }
+
         if (aggregatedRes.ok) {
           const aggregatedData = await aggregatedRes.json();
           setAggregated(aggregatedData);
-          setMetadata(buildMetadata(detailedData, aggregatedData));
+          setMetadata(buildMetadata(detailedData, aggregatedData, geoJson));
         } else {
-          setMetadata(buildMetadata(detailedData, null));
-        }
-
-        if (geoRes.ok) {
-          const geoJson = await geoRes.json();
-          setGeoData(geoJson);
+          setMetadata(buildMetadata(detailedData, null, geoJson));
         }
       } catch (err) {
         setError(err.message);

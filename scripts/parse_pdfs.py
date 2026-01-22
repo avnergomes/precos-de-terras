@@ -1,4 +1,4 @@
-import csv
+﻿import csv
 import os
 import re
 import unicodedata
@@ -17,9 +17,9 @@ RAW_SOIL_TYPES = {
     'Mista',
     'Arenosa',
     'Organica',
-    'Orgânica',
+    'OrgÃ¢nica',
     'Hidromorfica',
-    'Hidromórfica',
+    'HidromÃ³rfica',
     'Brunada',
     'Brunizada',
 }
@@ -33,9 +33,21 @@ CLASS_NAMES = [
 
 CLASS_DISPLAY = {
     'mecanizada': 'Mecanizada',
-    'mecanizavel': 'Mecanizável',
-    'nao mecanizavel': 'Não Mecanizável',
-    'inaproveitaveis': 'Inaproveitáveis',
+    'mecanizavel': 'MecanizÃ¡vel',
+    'nao mecanizavel': 'NÃ£o MecanizÃ¡vel',
+    'inaproveitaveis': 'InaproveitÃ¡veis',
+}
+
+BAD_MUNICIPIO_TOKENS = {
+    'divisao de estatisticas basicas',
+    'municipio',
+    'municpio',
+    'pagina',
+    'terra',
+    'tipo de terra',
+    'tipo de',
+    'precos medios de terras agricolas',
+    'precos medios de terras agricolas detalhamento por caracteristica e municipio de 2007 a 2016 em reais por hectare',
 }
 
 
@@ -50,7 +62,7 @@ SOIL_TYPES = set(SOIL_DISPLAY.keys())
 
 def parse_number(token):
     token = token.strip()
-    if token in ('', '-', '—'):
+    if token in ('', '-', 'â€”'):
         return None
     token = token.replace('.', '').replace('R$', '').replace(' ', '')
     token = token.replace(',', '.')
@@ -60,10 +72,27 @@ def parse_number(token):
         return None
 
 
+def is_valid_municipio(value):
+    if not value:
+        return False
+    if any(ch.isdigit() for ch in value):
+        return False
+    normalized = normalize(value)
+    if not normalized or normalized in BAD_MUNICIPIO_TOKENS:
+        return False
+    if normalized in CLASS_NAMES or normalized in SOIL_TYPES:
+        return False
+    if normalized.startswith('pagina'):
+        return False
+    if re.fullmatch(r'[\-\s]+', normalized):
+        return False
+    return True
+
+
 def detect_format(text):
-    if 'Munícipio Classe / Grau' in text or 'Municipio Classe / Grau' in text:
+    if 'Munícipio Classe / Grau' in text or 'MunÃ­cipio Classe / Grau' in text or 'Municipio Classe / Grau' in text:
         return 'multi_year'
-    if 'Município A-' in text or 'Municipio A-' in text:
+    if 'Município A-' in text or 'MunicÃ­pio A-' in text or 'Municipio A-' in text:
         return 'single_year'
     return None
 
@@ -96,7 +125,7 @@ def parse_multi_year(text):
 
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     for line in lines:
-        if line.startswith('Fonte:') or line.startswith('PREÇOS') or line.startswith('Preços'):
+        if line.startswith('Fonte:') or line.startswith('PREÃ‡OS') or line.startswith('PreÃ§os'):
             continue
         if 'municipio' in normalize(line):
             years = extract_years(line)
@@ -139,7 +168,8 @@ def parse_multi_year(text):
         last_token = normalize(tokens[-1])
         if last_token in SOIL_TYPES:
             if len(tokens) > 1:
-                current_municipio = ' '.join(tokens[:-1])
+                candidate = ' '.join(tokens[:-1])
+                current_municipio = candidate if is_valid_municipio(candidate) else None
             current_soil = SOIL_DISPLAY.get(last_token, tokens[-1])
             continue
 
@@ -147,7 +177,7 @@ def parse_multi_year(text):
             continue
 
         if len(tokens) > 1:
-            current_municipio = line
+            current_municipio = line if is_valid_municipio(line) else None
 
     return rows
 
@@ -158,7 +188,7 @@ def parse_single_year(text, year):
 
     lines = [line.strip() for line in text.splitlines() if line.strip()]
     for line in lines:
-        if line.startswith('Fonte:') or line.startswith('PREÇOS') or line.startswith('Preços'):
+        if line.startswith('Fonte:') or line.startswith('PREÃ‡OS') or line.startswith('PreÃ§os'):
             continue
         if 'municipio' in normalize(line):
             codes = extract_class_codes(line)
@@ -173,7 +203,7 @@ def parse_single_year(text, year):
         if not match:
             continue
         municipio = line[:match.start()].strip()
-        if not municipio:
+        if not municipio or not is_valid_municipio(municipio):
             continue
 
         values = re.findall(r'\d[\d\.]*', line[match.start():])
@@ -239,3 +269,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+
+

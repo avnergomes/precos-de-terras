@@ -1,6 +1,8 @@
-import csv
+﻿import csv
 import json
 import os
+import re
+import unicodedata
 from glob import glob
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -30,22 +32,56 @@ CATEGORIA_MAP = {
 }
 
 SUBCATEGORIA_MAP = {
-    # Roxa (mais fértil)
+    # Roxa (mais fÃ©rtil)
     'Roxa|Mecanizada': 'A-I',
-    'Roxa|Mecanizável': 'A-II',
-    'Roxa|Não Mecanizável': 'B-VI',
-    'Roxa|Inaproveitáveis': 'C-VIII',
-    # Mista (média)
+    'Roxa|MecanizÃ¡vel': 'A-II',
+    'Roxa|NÃ£o MecanizÃ¡vel': 'B-VI',
+    'Roxa|InaproveitÃ¡veis': 'C-VIII',
+    # Mista (mÃ©dia)
     'Mista|Mecanizada': 'A-II',
-    'Mista|Mecanizável': 'A-III',
-    'Mista|Não Mecanizável': 'B-VII',
-    'Mista|Inaproveitáveis': 'C-VIII',
-    # Arenosa (menos fértil)
+    'Mista|MecanizÃ¡vel': 'A-III',
+    'Mista|NÃ£o MecanizÃ¡vel': 'B-VII',
+    'Mista|InaproveitÃ¡veis': 'C-VIII',
+    # Arenosa (menos fÃ©rtil)
     'Arenosa|Mecanizada': 'A-III',
-    'Arenosa|Mecanizável': 'A-IV',
-    'Arenosa|Não Mecanizável': 'B-VII',
-    'Arenosa|Inaproveitáveis': 'C-VIII',
+    'Arenosa|MecanizÃ¡vel': 'A-IV',
+    'Arenosa|NÃ£o MecanizÃ¡vel': 'B-VII',
+    'Arenosa|InaproveitÃ¡veis': 'C-VIII',
 }
+
+BAD_MUNICIPIO_TOKENS = {
+    'divisao de estatisticas basicas',
+    'municipio',
+    'municpio',
+    'pagina',
+    'terra',
+    'tipo de terra',
+    'tipo de',
+    'precos medios de terras agricolas',
+    'precos medios de terras agricolas detalhamento por caracteristica e municipio de 2007 a 2016 em reais por hectare',
+}
+
+
+def normalize(value):
+    if value is None:
+        return ''
+    text = unicodedata.normalize('NFKD', str(value))
+    return ''.join(ch for ch in text if not unicodedata.combining(ch)).lower().strip()
+
+
+def is_valid_municipio(value):
+    if not value:
+        return False
+    if any(ch.isdigit() for ch in value):
+        return False
+    normalized = normalize(value)
+    if not normalized or normalized in BAD_MUNICIPIO_TOKENS:
+        return False
+    if normalized.startswith('pagina'):
+        return False
+    if re.fullmatch(r'[\-\s]+', normalized):
+        return False
+    return True
 
 
 def normalizar_nomenclatura(categoria, subcategoria):
@@ -54,7 +90,7 @@ def normalizar_nomenclatura(categoria, subcategoria):
 
     classe = None
 
-    # Se já está no formato novo (A-I, B-VI, etc.)
+    # Se jÃ¡ estÃ¡ no formato novo (A-I, B-VI, etc.)
     if categoria == 'Classe de Capacidade de Uso' and subcategoria and re.match(r'^[ABC]-[IVX]+$', subcategoria):
         classe = subcategoria
     else:
@@ -67,14 +103,14 @@ def normalizar_nomenclatura(categoria, subcategoria):
         grupo = classe[0]  # Primeira letra: A, B ou C
         return grupo, classe
 
-    # Fallback: mantém original
+    # Fallback: mantÃ©m original
     return categoria, subcategoria
 
 
 def load_municipios_map():
-    """Carrega mapeamento de municípios para região e mesorregião do mun_PR.json."""
+    """Carrega mapeamento de municÃ­pios para regiÃ£o e mesorregiÃ£o do mun_PR.json."""
     if not os.path.exists(MUN_PR_PATH):
-        print(f'Aviso: {MUN_PR_PATH} não encontrado. Região/mesorregião não serão incluídas.')
+        print(f'Aviso: {MUN_PR_PATH} nÃ£o encontrado. RegiÃ£o/mesorregiÃ£o nÃ£o serÃ£o incluÃ­das.')
         return {}
 
     with open(MUN_PR_PATH, encoding='utf-8') as f:
@@ -152,7 +188,7 @@ def main():
         if not csv_files:
             raise SystemExit('Nenhum CSV encontrado em data/extracted.')
 
-    # Carrega mapeamento de municípios para região/mesorregião
+    # Carrega mapeamento de municÃ­pios para regiÃ£o/mesorregiÃ£o
     mun_map = load_municipios_map()
 
     rows = []
@@ -168,11 +204,14 @@ def main():
                 categoria, subcategoria = normalizar_nomenclatura(categoria_raw, subcategoria_raw)
 
                 territorio = row.get('territorio', '').strip()
+                nivel = row.get('nivel', '').strip()
+                if nivel == 'Municipio' and not is_valid_municipio(territorio):
+                    continue
                 mun_info = mun_map.get(territorio.lower(), {})
 
                 registro = {
                     'ano': int(row['ano']) if row.get('ano') else None,
-                    'nivel': row.get('nivel', '').strip(),
+                    'nivel': nivel,
                     'territorio': territorio,
                     'territorio_codigo': row.get('territorio_codigo', '').strip(),
                     'regiao': mun_info.get('regiao', ''),
@@ -200,3 +239,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+
+
