@@ -1,4 +1,4 @@
-import { ExternalLink, Database } from 'lucide-react';
+﻿import { ExternalLink, Database } from 'lucide-react';
 
 export default function Footer({ metadata }) {
   const currentYear = new Date().getFullYear();
@@ -51,6 +51,43 @@ export default function Footer({ metadata }) {
           <p className="text-xs text-dark-600">
             {currentYear} Precos de Terras PR. Dados publicos processados para fins analiticos.
           </p>
+          <div className="flex flex-col items-center gap-2">
+            <h4 className="text-[10px] md:text-xs font-semibold text-dark-900">Outros projetos</h4>
+            <div className="flex flex-wrap justify-center gap-2">
+              <a
+                href="https://avnergomes.github.io/portfolio/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-3 py-1.5 text-[10px] md:text-xs rounded-full border border-accent-200 bg-white/70 text-dark-700 hover:text-primary-600 hover:border-primary-300 transition-colors"
+              >
+                Portfolio
+              </a>
+              <a
+                href="https://avnergomes.github.io/vbp-parana/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-3 py-1.5 text-[10px] md:text-xs rounded-full border border-accent-200 bg-white/70 text-dark-700 hover:text-primary-600 hover:border-primary-300 transition-colors"
+              >
+                VBP Parana
+              </a>
+              <a
+                href="https://avnergomes.github.io/precos-diarios/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-3 py-1.5 text-[10px] md:text-xs rounded-full border border-accent-200 bg-white/70 text-dark-700 hover:text-primary-600 hover:border-primary-300 transition-colors"
+              >
+                Precos Diarios
+              </a>
+              <a
+                href="https://avnergomes.github.io/precos-florestais/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-3 py-1.5 text-[10px] md:text-xs rounded-full border border-accent-200 bg-white/70 text-dark-700 hover:text-primary-600 hover:border-primary-300 transition-colors"
+              >
+                Precos Florestais
+              </a>
+            </div>
+          </div>
           <a
             href="https://avnergomes.github.io/portfolio"
             target="_blank"
@@ -70,3 +107,4 @@ export default function Footer({ metadata }) {
     </footer>
   );
 }
+
