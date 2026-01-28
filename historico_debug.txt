@@ -1,0 +1,36 @@
+HISTORICO DE DEBUG - app.py (Render)
+Data: 2026-01-22
+========================================
+
+PROBLEMA RELATADO:
+- API rodando no Render retorna 200 OK mas sem resultados
+- RuntimeWarning sobre 'duckduckgo_search' na linha 127
+- DeprecationWarning sobre datetime.utcnow() na linha 188
+
+ALTERACOES FEITAS NO app.py:
+1. Adicionado logging para diagnostico
+2. Corrigido datetime.utcnow() para datetime.now(timezone.utc)
+3. Adicionado logs em:
+   - executar_busca(): mostra query e quantidade de resultados
+   - buscar_anuncios(): mostra tentativas de query e filtros aplicados
+   - search endpoint: mostra municipio, area e resultados finais
+
+CAUSA PROVAVEL:
+O DuckDuckGo esta bloqueando requisicoes do IP do Render.
+Servicos cloud (Render, AWS, Heroku) tem IPs frequentemente bloqueados
+pelo DuckDuckGo para evitar scraping em massa.
+
+SOLUCOES POSSIVEIS:
+1. Usar proxy - Rotacionar IPs com servico de proxy
+2. Google Custom Search API - API oficial (paga)
+3. SerpAPI - Servico de busca (pago)
+4. Brave Search API - Tem tier gratuito
+5. Cache de resultados - Reduzir quantidade de requisicoes
+
+PROXIMOS PASSOS:
+1. Fazer deploy das alteracoes
+2. Verificar os logs no Render para confirmar o problema
+3. Se confirmar bloqueio do DuckDuckGo, implementar alternativa
+
+ARQUIVOS MODIFICADOS:
+- price_search/app.py
