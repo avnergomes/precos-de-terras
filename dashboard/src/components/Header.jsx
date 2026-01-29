@@ -29,23 +29,23 @@ export default function Header({ metadata }) {
             </div>
             <div>
               <h1 className="text-xl md:text-2xl lg:text-3xl font-display font-bold tracking-tight">
-                Precos de Terras - PR
+                Preços de Terras - PR
               </h1>
               <p className="text-accent-200 text-xs md:text-sm lg:text-base font-medium">
-                Analise Historica dos Valores de Terra
+                Análise Histórica dos Valores de Terra
               </p>
             </div>
           </div>
 
           <div className="flex flex-wrap gap-2 md:gap-3 md:justify-end">
-            <QuickStat icon={TrendingUp} label={`${anoMin}-${anoMax}`} sublabel="Serie historica" />
+            <QuickStat icon={TrendingUp} label={`${anoMin}-${anoMax}`} sublabel="Série histórica" />
           </div>
         </div>
 
         <div className="mt-4 md:mt-6 p-3 md:p-4 bg-white/10 backdrop-blur-sm rounded-xl border border-white/20">
           <p className="text-neutral-50 text-xs md:text-sm leading-relaxed">
-            Acompanhe a evolucao anual dos precos de terras no Parana ao longo da serie historica.
-            Visualizacoes interativas destacam ciclos, tendencias e variacoes no tempo.
+            Acompanhe a evolução anual dos preços de terras no Paraná ao longo da série histórica.
+            Visualizações interativas destacam ciclos, tendências e variações no tempo.
           </p>
         </div>
       </div>
