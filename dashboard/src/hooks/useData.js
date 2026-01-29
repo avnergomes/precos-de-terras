@@ -228,7 +228,21 @@ function computeStats(values) {
   return { media, mediana, min, max, desvio };
 }
 
-export function useAggregations(filteredData, filters) {
+function buildMunicipioToRegIdr(geoData) {
+  const map = new Map();
+  if (!geoData?.features?.length) return map;
+  geoData.features.forEach(feature => {
+    const props = feature.properties || {};
+    const municipio = resolveGeoName(props);
+    const regIdr = props.RegIdr || props.regIdr || props.regional || '';
+    if (municipio && regIdr) {
+      map.set(normalizeKey(municipio), regIdr);
+    }
+  });
+  return map;
+}
+
+export function useAggregations(filteredData, filters, geoData) {
   return useMemo(() => {
     if (!filteredData || filteredData.length === 0) {
       return {
@@ -244,6 +258,7 @@ export function useAggregations(filteredData, filters) {
         bySubcategoria: [],
         timeSeriesBySubcategoria: {},
         byTerritorio: [],
+        byRegIdr: [],
       };
     }
 
@@ -344,6 +359,27 @@ export function useAggregations(filteredData, filters) {
       })
       .sort((a, b) => b.media - a.media);
 
+    const municipioToRegIdr = buildMunicipioToRegIdr(geoData);
+    const byRegIdr = Array.from(groupBy(filteredData, row => {
+      const municipio = row.territorio || '';
+      const regIdr = municipioToRegIdr.get(normalizeKey(municipio));
+      return regIdr || 'Sem regional IDR';
+    }).entries())
+      .map(([regIdr, rows]) => {
+        const precoStats = computeStats(rows.map(r => r.preco).filter(v => Number.isFinite(v)));
+        return {
+          territorio: regIdr,
+          codigo: null,
+          nivel: 'RegIdr',
+          media: precoStats.media,
+          mediana: precoStats.mediana,
+          min: precoStats.min,
+          max: precoStats.max,
+          registros: rows.length,
+        };
+      })
+      .sort((a, b) => b.media - a.media);
+
     return {
       totalRegistros: filteredData.length,
       precoMedio: stats.media,
@@ -357,6 +393,7 @@ export function useAggregations(filteredData, filters) {
       bySubcategoria,
       timeSeriesBySubcategoria,
       byTerritorio,
+      byRegIdr,
     };
-  }, [filteredData, filters.nivel]);
+  }, [filteredData, filters.nivel, geoData]);
 }

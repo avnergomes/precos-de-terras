@@ -16,8 +16,9 @@ function CustomTooltip({ active, payload }) {
   return null;
 }
 
-export default function TerritoryChart({ data, nivel }) {
-  const top = (data?.byTerritorio || []).slice(0, 5);
+export default function TerritoryChart({ data, nivel, rows }) {
+  const baseRows = rows || data?.byTerritorio || [];
+  const top = baseRows.slice(0, 5);
 
   if (!top.length) {
     return (

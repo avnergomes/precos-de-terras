@@ -42,7 +42,7 @@ export default function App() {
   }, [metadata]);
 
   const filteredData = useFilteredData(detailed, filters);
-  const aggregates = useAggregations(filteredData, filters);
+  const aggregates = useAggregations(filteredData, filters, geoData);
 
   const filterSummary = useMemo(() => {
     const [anoMin, anoMax] = filters.anos || [];
@@ -140,11 +140,12 @@ export default function App() {
 
             {activeTab === 'territorial' && (
               <>
-                <TerritoryChart data={aggregates} nivel={filters.nivel} />
+                <TerritoryChart data={aggregates} nivel="Regional IDR-Paran\u00e1" rows={aggregates.byRegIdr} />
                 <RankingTable
                   data={aggregates}
                   title="Ranking territorial"
-                  levelLabel={filters.nivel || 'Nivel territorial'}
+                  levelLabel="Regional IDR-Paran\u00e1"
+                  rows={aggregates.byRegIdr}
                 />
               </>
             )}
