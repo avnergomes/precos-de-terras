@@ -44,6 +44,18 @@ export default function App() {
   const filteredData = useFilteredData(detailed, filters);
   const aggregates = useAggregations(filteredData, filters);
 
+  const filterSummary = useMemo(() => {
+    const [anoMin, anoMax] = filters.anos || [];
+    const periodLabel = anoMin && anoMax ? `${anoMin} - ${anoMax}` : 'Todos os anos';
+    const nivelLabel = filters.nivel || metadata?.niveis?.[0] || 'N\u00edvel territorial';
+    const regionLabel = filters.regioes?.length ? filters.regioes.join(', ') : 'Todas as regi\u00f5es';
+    const mesoLabel = filters.mesorregioes?.length ? filters.mesorregioes.join(', ') : 'Todas as mesorregi\u00f5es';
+    const categoriaLabel = filters.categorias?.length ? filters.categorias.join(', ') : 'Todas as categorias';
+    const subcategoriaLabel = filters.subcategorias?.length ? filters.subcategorias.join(', ') : 'Todas as subcategorias';
+
+    return `Per\u00edodo: ${periodLabel} \u2022 N\u00edvel: ${nivelLabel} \u2022 Regi\u00e3o: ${regionLabel} \u2022 Mesorregi\u00e3o: ${mesoLabel} \u2022 Categoria: ${categoriaLabel} \u2022 Subcategoria: ${subcategoriaLabel}`;
+  }, [filters, metadata]);
+
   const hasData = useMemo(() => filteredData?.length > 0, [filteredData]);
 
   if (loading) {
@@ -80,6 +92,8 @@ export default function App() {
           onFiltersChange={setFilters}
           filteredData={filteredData}
         />
+
+        <div className="text-sm text-neutral-500">{filterSummary}</div>
 
         <ClasseLegend />
 
