@@ -1,4 +1,4 @@
-﻿import json
+import json
 import logging
 import re
 import unicodedata
@@ -15,32 +15,27 @@ logger = logging.getLogger(__name__)
 def extrair_preco(texto):
   if not texto:
     return None
-  match = re.search(r"R\\$\\s?([\\d\\.]+,\\d+)", texto)
-  return match.group(0) if match else None
+  # R$ 1.500.000,00 or R$ 1500000 or R$ 850.000
+  match = re.search(r"R\$\s?([\d\.]+,\d+)", texto)
+  if match:
+    return match.group(0)
+  match = re.search(r"R\$\s?([\d\.]{4,})", texto)
+  if match:
+    return match.group(0)
+  return None
 
 
 def extrair_area(texto):
   if not texto:
     return None
-  match = re.search(r"(\\d+[\\.,]?\\d*)\\s?(ha|hectare|hectares|alqueire|alqueires)", texto, re.IGNORECASE)
+  match = re.search(r"(\d+[\.,]?\d*)\s?(ha|hectare|hectares|alqueire|alqueires)", texto, re.IGNORECASE)
   if match:
     return f"{match.group(1)} {match.group(2)}"
-  match = re.search(r"(\\d+[\\.,]?\\d*)\\s?m2", texto, re.IGNORECASE)
+  match = re.search(r"(\d+[\.,]?\d*)\s?m2", texto, re.IGNORECASE)
   if match:
     return f"{match.group(1)} m2"
   return None
 
-
-CLASSE_TERMS = {
-  "A-I": "classe I lavoura",
-  "A-II": "classe II lavoura",
-  "A-III": "classe III lavoura",
-  "A-IV": "classe IV lavoura",
-  "B-V": "classe V pastagem",
-  "B-VI": "classe VI pastagem",
-  "B-VII": "classe VII pastagem",
-  "C-VIII": "classe VIII preservacao",
-}
 
 GOOD_KEYWORDS = [
   "fazenda",
@@ -49,8 +44,16 @@ GOOD_KEYWORDS = [
   "imovel rural",
   "propriedade rural",
   "area rural",
+  "terreno rural",
+  "terra rural",
   "a venda",
   "vende",
+  "hectare",
+  "alqueire",
+  " ha ",
+  "agricola",
+  "lavoura",
+  "pastagem",
 ]
 
 BAD_KEYWORDS = [
@@ -67,7 +70,11 @@ BAD_KEYWORDS = [
   "bar & grill",
   "steam",
   "game",
-  "tv",
+  "tv ",
+  "receita",
+  "turismo",
+  "hotel",
+  "pousada",
 ]
 
 BAD_DOMAINS = [
@@ -77,8 +84,16 @@ BAD_DOMAINS = [
   "netflix.com",
   "primevideo.com",
   "disneyplus.com",
+  "facebook.com",
+  "instagram.com",
+  "twitter.com",
+  "x.com",
+  "tiktok.com",
+  "youtube.com",
+  "pinterest.com",
+  "tripadvisor.com",
+  "booking.com",
 ]
-
 
 
 def normalize_text(text):
@@ -102,28 +117,32 @@ def is_good_result(titulo, snippet):
   return any(keyword in text for keyword in GOOD_KEYWORDS)
 
 
-def montar_query(municipio, area_total, areas, usar_classes=True):
-  base = f"fazenda a venda {municipio} imovel rural preco"
-  if not usar_classes:
-    return base
+def montar_queries(municipio, area_total, areas):
+  """Build a list of search queries from most specific to most generic."""
+  queries = []
 
-  classes_com_area = [
-    (classe, float(valor))
-    for classe, valor in (areas or {}).items()
-    if float(valor or 0) > 0
-  ]
+  # Area description for queries
+  area_desc = ""
+  if area_total and area_total > 0:
+    area_desc = f" {area_total:.0f} hectares"
 
-  classes_com_area.sort(key=lambda item: item[1], reverse=True)
-  termos = []
-  for classe, _valor in classes_com_area[:3]:
-    termo = CLASSE_TERMS.get(classe)
-    if termo:
-      termos.append(termo)
+  # Determine dominant use from areas
+  uso = ""
+  if areas:
+    grupo_a = sum(float(areas.get(c, 0) or 0) for c in ["A-I", "A-II", "A-III", "A-IV"])
+    grupo_b = sum(float(areas.get(c, 0) or 0) for c in ["B-V", "B-VI", "B-VII"])
+    if grupo_a > grupo_b and grupo_a > 0:
+      uso = "lavoura agricola"
+    elif grupo_b > 0:
+      uso = "pastagem"
 
-  if not termos:
-    return base
+  # Most specific → most generic
+  queries.append(f"propriedade rural venda {municipio} Parana{area_desc} {uso}".strip())
+  queries.append(f"fazenda a venda {municipio} PR{area_desc}".strip())
+  queries.append(f"sitio chacara venda {municipio} Parana preco".strip())
+  queries.append(f"imovel rural {municipio} Parana hectares preco".strip())
 
-  return f"{base} {' '.join(termos)}"
+  return queries
 
 
 def executar_busca(query, max_results):
@@ -140,12 +159,7 @@ def executar_busca(query, max_results):
 
 def buscar_anuncios(municipio, area_total, areas, max_results=6):
   anuncios = []
-  queries = [
-    montar_query(municipio, area_total, areas, usar_classes=True),
-    montar_query(municipio, area_total, areas, usar_classes=False),
-    f"sitio a venda {municipio} preco",
-    f"chacara a venda {municipio} preco",
-  ]
+  queries = montar_queries(municipio, area_total, areas)
 
   resultados = []
   for i, query in enumerate(queries):
@@ -158,18 +172,27 @@ def buscar_anuncios(municipio, area_total, areas, max_results=6):
 
   filtrados_bad = 0
   filtrados_not_good = 0
+  seen_links = set()
+
   for resultado in resultados:
     link = resultado.get("href") or resultado.get("url") or ""
     titulo = resultado.get("title") or resultado.get("heading") or "Anuncio sem titulo"
     snippet = resultado.get("body") or resultado.get("snippet") or ""
+
+    if link in seen_links:
+      continue
+    seen_links.add(link)
+
     if is_bad_result(link, titulo, snippet):
       filtrados_bad += 1
       continue
     if not is_good_result(titulo, snippet) and not extrair_preco(snippet):
       filtrados_not_good += 1
       continue
-    preco = extrair_preco(snippet)
-    area = extrair_area(snippet)
+
+    preco = extrair_preco(snippet) or extrair_preco(titulo)
+    area = extrair_area(snippet) or extrair_area(titulo)
+
     anuncios.append({
       "titulo": titulo,
       "preco": preco,
@@ -259,4 +282,3 @@ def main():
 
 if __name__ == "__main__":
   main()
-
