@@ -8,14 +8,6 @@ const INITIAL_AREAS = CLASSES.reduce((acc, classe) => {
   return acc;
 }, {});
 
-function normalizeAreas(areas) {
-  return Object.entries(areas).reduce((acc, [classe, value]) => {
-    const parsed = parseFloat(value);
-    acc[classe] = Number.isFinite(parsed) ? parsed : 0;
-    return acc;
-  }, {});
-}
-
 function formatBRL(value) {
   if (!Number.isFinite(value) || value === 0) return '-';
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -25,11 +17,6 @@ export default function PriceSearch({ metadata, detailed }) {
   const [municipio, setMunicipio] = useState('');
   const [areas, setAreas] = useState(INITIAL_AREAS);
   const [totalArea, setTotalArea] = useState(0);
-  const [resultados, setResultados] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [lastSearch, setLastSearch] = useState(null);
-  const [error, setError] = useState('');
-  const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
     const soma = Object.values(areas).reduce((acc, v) => acc + (parseFloat(v) || 0), 0);
@@ -40,44 +27,8 @@ export default function PriceSearch({ metadata, detailed }) {
     return metadata?.territorios?.Municipio || [];
   }, [metadata]);
 
-  const apiBase = import.meta.env.VITE_PRICE_SEARCH_URL;
-  const canSearch = Boolean(municipio) && totalArea > 0 && !loading && Boolean(apiBase);
-
   const handleAreaChange = (classe, valor) => {
     setAreas(prev => ({ ...prev, [classe]: valor }));
-  };
-
-  const handlePesquisar = async () => {
-    if (!canSearch) return;
-    setLoading(true);
-    setError('');
-    setResultados([]);
-    setHasSearched(true);
-
-    try {
-      const response = await fetch(`${apiBase}/api/search`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          municipio,
-          areas: normalizeAreas(areas),
-          area_total: totalArea,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Resposta invalida do servidor');
-      }
-
-      const data = await response.json();
-      setResultados(data?.resultados || []);
-      setLastSearch(new Date());
-    } catch (err) {
-      console.error('Erro ao buscar precos:', err);
-      setError('Nao foi possivel concluir a pesquisa agora.');
-    } finally {
-      setLoading(false);
-    }
   };
 
   // DERAL estimate: prices per class + weighted average
@@ -141,18 +92,9 @@ export default function PriceSearch({ metadata, detailed }) {
 
   if (!metadata) return null;
 
-  const resultadosExibidos = resultados.slice(0, 6);
-
   return (
     <div className="card p-4 md:p-6 space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-bold">Pesquisa de preco</h2>
-        {!apiBase && (
-          <span className="text-sm text-amber-700 bg-amber-50 px-3 py-1 rounded-full">
-            Configure VITE_PRICE_SEARCH_URL para habilitar a pesquisa online
-          </span>
-        )}
-      </div>
+      <h2 className="text-xl font-bold">Estimativa de valor da terra</h2>
 
       {/* Municipality selector */}
       <div>
@@ -260,60 +202,6 @@ export default function PriceSearch({ metadata, detailed }) {
       {municipio && !deralData && (
         <div className="text-sm text-earth-500 bg-earth-50 rounded-lg p-3">
           Sem dados DERAL para o municipio selecionado.
-        </div>
-      )}
-
-      {/* Search button */}
-      <div className="flex justify-end">
-        <button
-          disabled={!canSearch}
-          onClick={handlePesquisar}
-          className="px-4 py-2 bg-forest-600 text-white rounded-lg hover:bg-forest-700 disabled:bg-earth-200 disabled:text-earth-500 transition-colors"
-        >
-          {loading ? 'Pesquisando...' : 'Pesquisar online'}
-        </button>
-      </div>
-
-      {error && (
-        <div className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg p-3">
-          {error}
-        </div>
-      )}
-
-      {hasSearched && !loading && resultadosExibidos.length === 0 && !error && (
-        <div className="text-sm text-earth-500">
-          Nenhum resultado encontrado na pesquisa online.
-        </div>
-      )}
-
-      {resultadosExibidos.length > 0 && (
-        <div className="space-y-3">
-          <h3 className="font-semibold text-earth-800">Resultados encontrados</h3>
-          <div className="grid grid-cols-1 gap-3">
-            {resultadosExibidos.map((item, index) => (
-              <div key={`${item.link || index}`} className="border border-earth-100 rounded-lg p-4">
-                <div className="font-semibold text-earth-900">{item.titulo || 'Anuncio sem titulo'}</div>
-                {item.municipio && <div className="text-forest-700">Municipio: {item.municipio}</div>}
-                {item.preco && <div className="text-forest-700">Valor: {item.preco}</div>}
-                {item.area && <div className="text-forest-700">Area: {item.area}</div>}
-                {item.link && (
-                  <a
-                    href={item.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-forest-600 hover:text-forest-700 underline mt-2"
-                  >
-                    Acessar anuncio
-                  </a>
-                )}
-              </div>
-            ))}
-          </div>
-          {lastSearch && (
-            <div className="text-xs text-earth-500">
-              Ultima pesquisa: {lastSearch.toLocaleString('pt-BR')}
-            </div>
-          )}
         </div>
       )}
     </div>
