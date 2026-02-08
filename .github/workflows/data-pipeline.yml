@@ -1,0 +1,69 @@
+name: Data Pipeline - Process Land Prices
+
+on:
+  # Manual trigger - execute quando novos PDFs forem adicionados
+  workflow_dispatch:
+    inputs:
+      extract_pdfs:
+        description: 'Extrair dados dos PDFs'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+jobs:
+  process:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install pandas numpy pdfplumber tabula-py
+          # Java para tabula
+          sudo apt-get update && sudo apt-get install -y default-jre
+
+      - name: Extract PDFs
+        if: ${{ inputs.extract_pdfs }}
+        run: |
+          python scripts/extract_pdfs.py || true
+          python scripts/parse_pdfs.py || true
+
+      - name: Preprocess data
+        run: |
+          python scripts/preprocess_data.py
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git add -A
+          if git diff --staged --quiet; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: update land prices data
+
+          Dados atualizados automaticamente pelo pipeline.
+
+          Co-Authored-By: GitHub Actions <noreply@github.com>"
+          git push
