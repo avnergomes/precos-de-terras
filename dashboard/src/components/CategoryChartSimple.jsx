@@ -80,19 +80,7 @@ export default function CategoryChartSimple({ data, onCategoriaClick, selectedCa
               fill="#62929E"
               radius={[0, 8, 8, 0]}
               barSize={40}
-              onClick={(data) => onCategoriaClick?.(data.categoria)}
-              cursor={onCategoriaClick ? 'pointer' : 'default'}
-            >
-              {chartData.map((entry, index) => (
-                <Cell
-                  key={`cell-${index}`}
-                  fill="#62929E"
-                  opacity={selectedCategoria && entry.categoria !== selectedCategoria ? 0.4 : 1}
-                  stroke={entry.categoria === selectedCategoria ? '#1f2937' : 'none'}
-                  strokeWidth={entry.categoria === selectedCategoria ? 2 : 0}
-                />
-              ))}
-            </Bar>
+            />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -105,10 +93,6 @@ export default function CategoryChartSimple({ data, onCategoriaClick, selectedCa
           </div>
         ))}
       </div>
-
-      <p className="text-xs text-center text-neutral-500 mt-2">
-        Clique para filtrar
-      </p>
     </div>
   );
 }

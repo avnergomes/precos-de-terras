@@ -89,7 +89,7 @@ function SubcategoriaCard({ item, isSelected, isGloballySelected, onClick, onDou
   );
 }
 
-export default function CategoryChart({ data, onSubcategoriaClick, selectedSubcategoria }) {
+export default function CategoryChart({ data }) {
   const [viewMode, setViewMode] = useState('subcategorias');
   const [selectedSubcategorias, setSelectedSubcategorias] = useState([]);
 
@@ -221,14 +221,12 @@ export default function CategoryChart({ data, onSubcategoriaClick, selectedSubca
                   key={item.subcategoria}
                   item={item}
                   isSelected={selectedSubcategorias.includes(item.subcategoria)}
-                  isGloballySelected={selectedSubcategoria === item.subcategoria}
                   onClick={() => toggleSubcategoria(item.subcategoria)}
-                  onDoubleClick={() => onSubcategoriaClick?.(item.subcategoria)}
                 />
               ))}
             </div>
             <p className="text-xs text-earth-400 text-center mt-3">
-              Clique para comparar evolução • Duplo-clique para filtrar dados
+              Clique nos cards para comparar a evolucao (maximo 4)
             </p>
           </>
         )}

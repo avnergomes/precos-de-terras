@@ -70,30 +70,18 @@ export default function TerritoryChart({ data, nivel, rows, onTerritorioClick, s
               tickLine={false}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Bar
-              dataKey="media"
-              radius={[0, 6, 6, 0]}
-              barSize={28}
-              onClick={(data) => onTerritorioClick?.(data.territorio)}
-              cursor={onTerritorioClick ? 'pointer' : 'default'}
-            >
+            <Bar dataKey="media" radius={[0, 6, 6, 0]} barSize={28}>
               {top.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
                   fill={index === 0 ? '#3d5a68' : '#546A7B'}
-                  fillOpacity={selectedTerritorio && entry.territorio !== selectedTerritorio ? 0.4 : (1 - index * 0.12)}
-                  stroke={entry.territorio === selectedTerritorio ? '#1f2937' : 'none'}
-                  strokeWidth={entry.territorio === selectedTerritorio ? 2 : 0}
+                  fillOpacity={1 - index * 0.12}
                 />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
-
-      <p className="text-xs text-center text-neutral-500 mt-2">
-        Clique para filtrar
-      </p>
     </div>
   );
 }

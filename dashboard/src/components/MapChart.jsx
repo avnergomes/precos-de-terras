@@ -128,15 +128,13 @@ export default function MapChart({ data, geoData, nivel, onTerritorioClick, sele
         const name = resolveFeatureName(props);
         const match = valuesByCode.get(String(code)) || valuesByName.get(normalizeKey(name));
         const value = match ? match[metric] : 0;
-        const isSelected = selectedTerritorio && name === selectedTerritorio;
-        const hasSelection = !!selectedTerritorio;
 
         return {
           fillColor: getColor(value),
-          weight: isSelected ? 3 : 1,
+          weight: 1,
           opacity: 1,
-          color: isSelected ? '#1f2937' : '#ffffff',
-          fillOpacity: hasSelection ? (isSelected ? 0.95 : 0.4) : 0.85,
+          color: '#ffffff',
+          fillOpacity: 0.85,
         };
       };
 
@@ -181,11 +179,6 @@ export default function MapChart({ data, geoData, nivel, onTerritorioClick, sele
           mouseout: (e) => {
             layerRef.current.resetStyle(e.target);
           },
-          click: () => {
-            if (onTerritorioClick) {
-              onTerritorioClick(name);
-            }
-          },
         });
       };
 
@@ -211,7 +204,7 @@ export default function MapChart({ data, geoData, nivel, onTerritorioClick, sele
         }
       }
     });
-  }, [filteredGeo, valuesByCode, valuesByName, metric, minVal, maxVal, featuresWithData, onTerritorioClick, selectedTerritorio]);
+  }, [filteredGeo, valuesByCode, valuesByName, metric, minVal, maxVal, featuresWithData]);
 
   if (!geoData) {
     return (
@@ -233,26 +226,16 @@ export default function MapChart({ data, geoData, nivel, onTerritorioClick, sele
 
         <div className="flex items-center gap-2">
           <Layers className="w-4 h-4 text-earth-400" />
-          <div className="flex items-center gap-1">
-            {[
-              { key: 'media', label: 'Média', color: 'bg-forest-600' },
-              { key: 'mediana', label: 'Mediana', color: 'bg-water-600' },
-              { key: 'max', label: 'Máximo', color: 'bg-harvest-600' },
-              { key: 'min', label: 'Mínimo', color: 'bg-earth-600' },
-            ].map(({ key, label, color }) => (
-              <button
-                key={key}
-                onClick={() => setMetric(key)}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                  metric === key
-                    ? `${color} text-white`
-                    : 'bg-earth-100 text-earth-600 hover:bg-earth-200'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <select
+            value={metric}
+            onChange={(e) => setMetric(e.target.value)}
+            className="filter-select w-auto"
+          >
+            <option value="media">Media</option>
+            <option value="mediana">Mediana</option>
+            <option value="max">Maximo</option>
+            <option value="min">Minimo</option>
+          </select>
         </div>
       </div>
 
@@ -273,7 +256,7 @@ export default function MapChart({ data, geoData, nivel, onTerritorioClick, sele
       </div>
 
       <p className="text-xs text-earth-400 text-center mt-2">
-        Passe o mouse para ver detalhes • Clique para filtrar
+        Passe o mouse sobre uma area para ver os detalhes.
       </p>
     </div>
   );
