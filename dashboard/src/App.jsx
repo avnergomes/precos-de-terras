@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useData, useFilteredData, useAggregations } from './hooks/useData';
 
 import Header from './components/Header';
 import Filters from './components/Filters';
+import ActiveFilters from './components/ActiveFilters';
 import ClasseLegend from './components/ClasseLegend';
 import Tabs from './components/Tabs';
 import KpiCards from './components/KpiCards';
@@ -31,6 +32,60 @@ export default function App() {
 
   const [activeTab, setActiveTab] = useState('overview');
 
+  // Estado de filtros interativos (clique nos gráficos)
+  const [interactiveFilters, setInteractiveFilters] = useState({
+    categoria: null,
+    subcategoria: null,
+    territorio: null,
+    ano: null,
+  });
+
+  // Handlers para filtros interativos
+  const handleCategoriaClick = useCallback((categoria) => {
+    setInteractiveFilters(prev => ({
+      ...prev,
+      categoria: prev.categoria === categoria ? null : categoria,
+      subcategoria: null, // Limpar filtro dependente
+    }));
+  }, []);
+
+  const handleSubcategoriaClick = useCallback((subcategoria) => {
+    setInteractiveFilters(prev => ({
+      ...prev,
+      subcategoria: prev.subcategoria === subcategoria ? null : subcategoria,
+    }));
+  }, []);
+
+  const handleTerritorioClick = useCallback((territorio) => {
+    setInteractiveFilters(prev => ({
+      ...prev,
+      territorio: prev.territorio === territorio ? null : territorio,
+    }));
+  }, []);
+
+  const handleAnoClick = useCallback((ano) => {
+    setInteractiveFilters(prev => ({
+      ...prev,
+      ano: prev.ano === ano ? null : ano,
+    }));
+  }, []);
+
+  const handleRemoveInteractiveFilter = useCallback((key) => {
+    setInteractiveFilters(prev => ({
+      ...prev,
+      [key]: null,
+    }));
+  }, []);
+
+  const clearInteractiveFilters = useCallback(() => {
+    setInteractiveFilters({
+      categoria: null,
+      subcategoria: null,
+      territorio: null,
+      ano: null,
+    });
+  }, []);
+
   useEffect(() => {
     if (metadata?.anos?.length) {
       setFilters(prev => ({
@@ -42,19 +97,26 @@ export default function App() {
   }, [metadata]);
 
   const filteredData = useFilteredData(detailed, filters);
-  const aggregates = useAggregations(filteredData, filters, geoData);
 
-  const filterSummary = useMemo(() => {
-    const [anoMin, anoMax] = filters.anos || [];
-    const periodLabel = anoMin && anoMax ? `${anoMin} - ${anoMax}` : 'Todos os anos';
-    const nivelLabel = filters.nivel || metadata?.niveis?.[0] || 'N\u00edvel territorial';
-    const regionLabel = filters.regioes?.length ? filters.regioes.join(', ') : 'Todas as regi\u00f5es';
-    const mesoLabel = filters.mesorregioes?.length ? filters.mesorregioes.join(', ') : 'Todas as mesorregi\u00f5es';
-    const categoriaLabel = filters.categorias?.length ? filters.categorias.join(', ') : 'Todas as categorias';
-    const subcategoriaLabel = filters.subcategorias?.length ? filters.subcategorias.join(', ') : 'Todas as subcategorias';
+  // Aplica filtros interativos aos dados filtrados
+  const interactiveFilteredData = useMemo(() => {
+    if (!filteredData?.length) return filteredData;
 
-    return `Per\u00edodo: ${periodLabel} \u2022 N\u00edvel: ${nivelLabel} \u2022 Regi\u00e3o: ${regionLabel} \u2022 Mesorregi\u00e3o: ${mesoLabel} \u2022 Categoria: ${categoriaLabel} \u2022 Subcategoria: ${subcategoriaLabel}`;
-  }, [filters, metadata]);
+    return filteredData.filter(item => {
+      if (interactiveFilters.categoria && item.categoria !== interactiveFilters.categoria) return false;
+      if (interactiveFilters.subcategoria && item.subcategoria !== interactiveFilters.subcategoria) return false;
+      if (interactiveFilters.territorio && item.territorio !== interactiveFilters.territorio) return false;
+      if (interactiveFilters.ano && item.ano !== interactiveFilters.ano) return false;
+      return true;
+    });
+  }, [filteredData, interactiveFilters]);
+
+  const aggregates = useAggregations(interactiveFilteredData, filters, geoData);
+
+  // Verifica se há filtros interativos ativos
+  const hasInteractiveFilters = useMemo(() => {
+    return Object.values(interactiveFilters).some(v => v !== null);
+  }, [interactiveFilters]);
 
   const hasData = useMemo(() => filteredData?.length > 0, [filteredData]);
 
@@ -93,7 +155,13 @@ export default function App() {
           filteredData={filteredData}
         />
 
-        <div className="text-sm text-neutral-500">{filterSummary}</div>
+        {hasInteractiveFilters && (
+          <ActiveFilters
+            filters={interactiveFilters}
+            onRemove={handleRemoveInteractiveFilter}
+            onClear={clearInteractiveFilters}
+          />
+        )}
 
         <ClasseLegend />
 
@@ -115,43 +183,80 @@ export default function App() {
           <div className="space-y-6">
             {activeTab === 'overview' && (
               <>
-                <TimeSeriesChart data={aggregates} />
+                <TimeSeriesChart
+                  data={aggregates}
+                  onAnoClick={handleAnoClick}
+                  selectedAno={interactiveFilters.ano}
+                />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <CategoryChartSimple data={aggregates} />
-                  <TerritoryChart data={aggregates} nivel={filters.nivel} />
+                  <CategoryChartSimple
+                    data={aggregates}
+                    onCategoriaClick={handleCategoriaClick}
+                    selectedCategoria={interactiveFilters.categoria}
+                  />
+                  <TerritoryChart
+                    data={aggregates}
+                    nivel={filters.nivel}
+                    onTerritorioClick={handleTerritorioClick}
+                    selectedTerritorio={interactiveFilters.territorio}
+                  />
                 </div>
               </>
             )}
 
             {activeTab === 'historico' && (
               <>
-                <TimeSeriesChart data={aggregates} />
+                <TimeSeriesChart
+                  data={aggregates}
+                  onAnoClick={handleAnoClick}
+                  selectedAno={interactiveFilters.ano}
+                />
                 <RankingTable
                   data={aggregates}
                   title="Territorios de maior valor medio"
                   levelLabel={filters.nivel || 'Nivel territorial'}
+                  onTerritorioClick={handleTerritorioClick}
+                  selectedTerritorio={interactiveFilters.territorio}
                 />
               </>
             )}
 
             {activeTab === 'categorias' && (
-              <CategoryChart data={aggregates} />
+              <CategoryChart
+                data={aggregates}
+                onSubcategoriaClick={handleSubcategoriaClick}
+                selectedSubcategoria={interactiveFilters.subcategoria}
+              />
             )}
 
             {activeTab === 'territorial' && (
               <>
-                <TerritoryChart data={aggregates} nivel="Regional IDR-Paran\u00e1" rows={aggregates.byRegIdr} />
+                <TerritoryChart
+                  data={aggregates}
+                  nivel="Regional IDR-Paraná"
+                  rows={aggregates.byRegIdr}
+                  onTerritorioClick={handleTerritorioClick}
+                  selectedTerritorio={interactiveFilters.territorio}
+                />
                 <RankingTable
                   data={aggregates}
                   title="Ranking territorial"
-                  levelLabel="Regional IDR-Paran\u00e1"
+                  levelLabel="Regional IDR-Paraná"
                   rows={aggregates.byRegIdr}
+                  onTerritorioClick={handleTerritorioClick}
+                  selectedTerritorio={interactiveFilters.territorio}
                 />
               </>
             )}
 
             {activeTab === 'mapa' && (
-              <MapChart data={aggregates} geoData={geoData} nivel={filters.nivel} />
+              <MapChart
+                data={aggregates}
+                geoData={geoData}
+                nivel={filters.nivel}
+                onTerritorioClick={handleTerritorioClick}
+                selectedTerritorio={interactiveFilters.territorio}
+              />
             )}
           </div>
         )}

@@ -54,17 +54,20 @@ function TimeSeriesCustomTooltip({ active, payload, label }) {
   return null;
 }
 
-function SubcategoriaCard({ item, isSelected, onClick }) {
+function SubcategoriaCard({ item, isSelected, isGloballySelected, onClick, onDoubleClick }) {
   const description = getClasseLabel(item.subcategoria, 'sipt') || item.subcategoria;
   const color = SUBCATEGORIA_COLORS[item.subcategoria] || '#62929E';
 
   return (
     <div
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
       className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${
-        isSelected
-          ? 'border-forest-500 bg-forest-50 shadow-md'
-          : 'border-earth-200 bg-white hover:border-earth-300 hover:shadow-sm'
+        isGloballySelected
+          ? 'border-primary-600 bg-primary-50 shadow-lg ring-2 ring-primary-300'
+          : isSelected
+            ? 'border-forest-500 bg-forest-50 shadow-md'
+            : 'border-earth-200 bg-white hover:border-earth-300 hover:shadow-sm'
       }`}
     >
       <div className="flex items-center justify-between mb-2">
@@ -86,7 +89,7 @@ function SubcategoriaCard({ item, isSelected, onClick }) {
   );
 }
 
-export default function CategoryChart({ data }) {
+export default function CategoryChart({ data, onSubcategoriaClick, selectedSubcategoria }) {
   const [viewMode, setViewMode] = useState('subcategorias');
   const [selectedSubcategorias, setSelectedSubcategorias] = useState([]);
 
@@ -218,12 +221,14 @@ export default function CategoryChart({ data }) {
                   key={item.subcategoria}
                   item={item}
                   isSelected={selectedSubcategorias.includes(item.subcategoria)}
+                  isGloballySelected={selectedSubcategoria === item.subcategoria}
                   onClick={() => toggleSubcategoria(item.subcategoria)}
+                  onDoubleClick={() => onSubcategoriaClick?.(item.subcategoria)}
                 />
               ))}
             </div>
             <p className="text-xs text-earth-400 text-center mt-3">
-              Clique nos cards para comparar a evolucao (maximo 4)
+              Clique para comparar evolução • Duplo-clique para filtrar dados
             </p>
           </>
         )}
