@@ -210,9 +210,13 @@ def buscar_anuncios(municipio, area_total, areas, max_results=6):
 app = FastAPI()
 app.add_middleware(
   CORSMiddleware,
-  allow_origins=["*"],
+  allow_origins=[
+    "https://avnergomes.github.io",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173"
+  ],
   allow_methods=["POST"],
-  allow_headers=["*"],
+  allow_headers=["Content-Type"],
 )
 
 
