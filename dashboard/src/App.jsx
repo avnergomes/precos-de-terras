@@ -197,7 +197,7 @@ export default function App() {
 
             {activeTab === 'territorial' && (
               <>
-                <TerritoryChart data={aggregates} nivel="Regional IDR-Paran\u00e1" rows={aggregates.byRegIdr} />
+                <TerritoryChart data={aggregates} nivel="Regional IDR-Paraná" rows={aggregates.byRegIdr} />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <LollipopChart
                     data={aggregates}
@@ -217,7 +217,7 @@ export default function App() {
                 <RankingTable
                   data={aggregates}
                   title="Ranking territorial"
-                  levelLabel="Regional IDR-Paran\u00e1"
+                  levelLabel="Regional IDR-Paraná"
                   rows={aggregates.byRegIdr}
                 />
               </>
