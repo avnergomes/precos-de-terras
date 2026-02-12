@@ -1,12 +1,6 @@
 import { useMemo, useState } from 'react'
 import * as d3 from 'd3'
 
-const CATEGORY_COLORS = {
-  'A': '#22c55e',
-  'B': '#eab308',
-  'C': '#ef4444',
-}
-
 export default function RadarChart({
   data,
   title = "Comparativo por Categoria",
@@ -17,49 +11,56 @@ export default function RadarChart({
   const [hoveredTerritory, setHoveredTerritory] = useState(null)
 
   const chartData = useMemo(() => {
-    if (!data?.byCategoria || !data?.byTerritorio) return null
+    if (!data) return null
 
-    // Get top territories by average price
-    const territories = Object.entries(data.byTerritorio || {})
-      .filter(([_, d]) => d.media > 0)
-      .sort((a, b) => b[1].media - a[1].media)
-      .slice(0, 5)
-      .map(([name]) => name)
+    // Extract categories - handle array format [categoria, {media, count}]
+    let categories = []
+    if (data.byCategoria && Array.isArray(data.byCategoria)) {
+      categories = data.byCategoria
+        .filter(d => d && d[0] && d[1] && d[1].media > 0)
+        .map(d => ({
+          name: d[0],
+          media: d[1].media
+        }))
+    }
 
-    if (territories.length === 0) return null
+    // Extract territories - handle array format [territorio, {media, count}]
+    let territories = []
+    if (data.byTerritorio && Array.isArray(data.byTerritorio)) {
+      territories = data.byTerritorio
+        .filter(d => d && d[0] && d[1] && d[1].media > 0)
+        .sort((a, b) => b[1].media - a[1].media)
+        .slice(0, 5)
+        .map(d => ({
+          name: d[0],
+          media: d[1].media
+        }))
+    }
 
-    // Get categories as axes
-    const categories = Object.keys(data.byCategoria).filter(c => c)
+    if (categories.length < 3 || territories.length === 0) return null
 
-    if (categories.length < 3) return null
-
-    // Build radar data for each territory
-    const radarData = territories.map(territory => {
-      const values = categories.map(cat => {
-        // Find price for this territory and category
-        const catData = data.byCategoriaSubcategoria?.[cat]
-        if (!catData) return 0
-
-        // Use overall category average as approximation
-        return data.byCategoria[cat]?.media || 0
-      })
-
+    // Build radar data - each territory gets category values
+    // Since we don't have territory-category cross data, we'll show category distribution
+    const radarData = territories.map((territory, idx) => {
+      const values = categories.map(cat => cat.media)
       return {
-        territory,
-        values
+        territory: territory.name,
+        values,
+        totalMedia: territory.media
       }
     })
 
-    const maxValue = Math.max(...radarData.flatMap(d => d.values))
+    const maxValue = Math.max(...categories.map(c => c.media))
+    const categoryNames = categories.map(c => c.name)
 
-    return { radarData, categories, maxValue }
+    return { radarData, categories: categoryNames, maxValue }
   }, [data])
 
   if (!chartData) {
     return (
-      <div className="card p-6">
-        <h3 className="text-lg font-semibold text-dark-700 mb-4">{title}</h3>
-        <div className="h-64 flex items-center justify-center text-dark-400">
+      <div className="bg-white rounded-xl border border-neutral-100 p-6">
+        <h3 className="text-lg font-semibold text-neutral-800 mb-4">{title}</h3>
+        <div className="h-64 flex items-center justify-center text-neutral-400">
           Dados insuficientes para o grafico
         </div>
       </div>
@@ -100,8 +101,8 @@ export default function RadarChart({
   const colors = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6']
 
   return (
-    <div className="card p-6">
-      <h3 className="text-lg font-semibold text-dark-700 mb-4">{title}</h3>
+    <div className="bg-white rounded-xl border border-neutral-100 p-6">
+      <h3 className="text-lg font-semibold text-neutral-800 mb-4">{title}</h3>
 
       <svg width={width} height={height} className="mx-auto">
         <g transform={`translate(${centerX}, ${centerY})`}>
@@ -181,7 +182,7 @@ export default function RadarChart({
                   onMouseEnter={() => setHoveredTerritory(territory.territory)}
                   onMouseLeave={() => setHoveredTerritory(null)}
                 >
-                  <title>{territory.territory}</title>
+                  <title>{`${territory.territory}: ${formatValue(territory.totalMedia)}`}</title>
                 </path>
 
                 {/* Data points */}
@@ -220,7 +221,7 @@ export default function RadarChart({
             <div
               key={territory.territory}
               className={`flex items-center gap-2 px-2 py-1 rounded cursor-pointer transition-all ${
-                hoveredTerritory === territory.territory ? 'bg-dark-100' : ''
+                hoveredTerritory === territory.territory ? 'bg-neutral-100' : ''
               }`}
               onMouseEnter={() => setHoveredTerritory(territory.territory)}
               onMouseLeave={() => setHoveredTerritory(null)}
@@ -229,7 +230,7 @@ export default function RadarChart({
                 className="w-3 h-3 rounded-full"
                 style={{ backgroundColor: colors[i % colors.length] }}
               />
-              <span className="text-xs text-dark-600">
+              <span className="text-xs text-neutral-600">
                 {territory.territory.length > 15
                   ? territory.territory.slice(0, 12) + '...'
                   : territory.territory}

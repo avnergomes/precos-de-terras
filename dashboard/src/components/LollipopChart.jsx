@@ -18,32 +18,61 @@ export default function LollipopChart({
   onTerritorioClick
 }) {
   const chartData = useMemo(() => {
-    if (!data?.byTerritorio) return null
+    if (!data) return null
 
-    // Convert to array and sort by average price
-    const items = Object.entries(data.byTerritorio)
-      .filter(([_, d]) => d.media > 0)
-      .map(([name, d]) => ({
-        territorio: name,
-        preco_medio: d.media,
-        count: d.count,
-        categoria_dominante: d.categoria_dominante || 'A'
-      }))
-      .sort((a, b) => b.preco_medio - a.preco_medio)
-      .slice(0, limit)
+    let items = []
+
+    // Handle array format (byTerritorio is an array)
+    if (data.byTerritorio && Array.isArray(data.byTerritorio)) {
+      items = data.byTerritorio
+        .filter(d => d && d[1] && d[1].media > 0)
+        .map(d => ({
+          territorio: d[0] || 'Desconhecido',
+          preco_medio: d[1].media || 0,
+          count: d[1].count || 0,
+          categoria_dominante: d[1].categoria_dominante || 'A'
+        }))
+    }
+    // Handle object format (byTerritorio as object with keys)
+    else if (data.byTerritorio && typeof data.byTerritorio === 'object') {
+      items = Object.entries(data.byTerritorio)
+        .filter(([_, d]) => d && d.media > 0)
+        .map(([name, d]) => ({
+          territorio: name,
+          preco_medio: d.media || 0,
+          count: d.count || 0,
+          categoria_dominante: d.categoria_dominante || 'A'
+        }))
+    }
+    // Handle direct array (rows prop)
+    else if (Array.isArray(data)) {
+      items = data
+        .filter(d => d && (d.media > 0 || d.preco_medio > 0))
+        .map(d => ({
+          territorio: d.territorio || d.name || d[0] || 'Desconhecido',
+          preco_medio: d.media || d.preco_medio || 0,
+          count: d.count || 0,
+          categoria_dominante: d.categoria_dominante || 'A'
+        }))
+    }
 
     if (items.length === 0) return null
 
-    const maxValue = Math.max(...items.map(d => d.preco_medio))
+    // Sort by price and take top N
+    const sorted = items
+      .sort((a, b) => b.preco_medio - a.preco_medio)
+      .slice(0, limit)
 
-    return { items, maxValue }
+    const maxValue = Math.max(...sorted.map(d => d.preco_medio))
+
+    return { items: sorted, maxValue }
   }, [data, limit])
 
   if (!chartData) {
     return (
-      <div className="card p-6">
-        <h3 className="text-lg font-semibold text-dark-700 mb-4">{title}</h3>
-        <div className="h-64 flex items-center justify-center text-dark-400">
+      <div className="bg-white rounded-xl border border-neutral-100 p-6">
+        <h3 className="text-lg font-semibold text-neutral-800 mb-4">{title}</h3>
+        <div className="h-64 flex items-center justify-center text-neutral-400">
           Sem dados disponiveis
         </div>
       </div>
@@ -70,8 +99,8 @@ export default function LollipopChart({
   }
 
   return (
-    <div className="card p-6">
-      <h3 className="text-lg font-semibold text-dark-700 mb-4">{title}</h3>
+    <div className="bg-white rounded-xl border border-neutral-100 p-6">
+      <h3 className="text-lg font-semibold text-neutral-800 mb-4">{title}</h3>
 
       <svg width={width} height={height}>
         <g transform={`translate(${MARGIN.left}, ${MARGIN.top})`}>
@@ -110,7 +139,7 @@ export default function LollipopChart({
 
             return (
               <g
-                key={item.territorio}
+                key={`${item.territorio}-${i}`}
                 className="group cursor-pointer"
                 onClick={() => onTerritorioClick?.(item.territorio)}
               >
@@ -149,15 +178,14 @@ export default function LollipopChart({
                   </title>
                 </circle>
 
-                {/* Value label on hover */}
+                {/* Value label - always visible */}
                 <text
                   x={xEnd + 12}
                   y={y}
                   alignmentBaseline="middle"
                   fill="#334155"
-                  fontSize={11}
+                  fontSize={10}
                   fontFamily="monospace"
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
                 >
                   {formatValue(item.preco_medio)}
                 </text>
@@ -192,7 +220,7 @@ export default function LollipopChart({
         {Object.entries(CATEGORY_COLORS).map(([cat, color]) => (
           <div key={cat} className="flex items-center gap-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
-            <span className="text-xs text-dark-600">Classe {cat}</span>
+            <span className="text-xs text-neutral-600">Classe {cat}</span>
           </div>
         ))}
       </div>
