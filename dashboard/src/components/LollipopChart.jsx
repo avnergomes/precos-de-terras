@@ -1,0 +1,201 @@
+import { useMemo } from 'react'
+import * as d3 from 'd3'
+
+const MARGIN = { top: 20, right: 80, bottom: 20, left: 160 }
+
+const CATEGORY_COLORS = {
+  'A': '#22c55e',
+  'B': '#eab308',
+  'C': '#ef4444',
+}
+
+export default function LollipopChart({
+  data,
+  title = "Ranking de Territorios",
+  width = 550,
+  height = 500,
+  limit = 15,
+  onTerritorioClick
+}) {
+  const chartData = useMemo(() => {
+    if (!data?.byTerritorio) return null
+
+    // Convert to array and sort by average price
+    const items = Object.entries(data.byTerritorio)
+      .filter(([_, d]) => d.media > 0)
+      .map(([name, d]) => ({
+        territorio: name,
+        preco_medio: d.media,
+        count: d.count,
+        categoria_dominante: d.categoria_dominante || 'A'
+      }))
+      .sort((a, b) => b.preco_medio - a.preco_medio)
+      .slice(0, limit)
+
+    if (items.length === 0) return null
+
+    const maxValue = Math.max(...items.map(d => d.preco_medio))
+
+    return { items, maxValue }
+  }, [data, limit])
+
+  if (!chartData) {
+    return (
+      <div className="card p-6">
+        <h3 className="text-lg font-semibold text-dark-700 mb-4">{title}</h3>
+        <div className="h-64 flex items-center justify-center text-dark-400">
+          Sem dados disponiveis
+        </div>
+      </div>
+    )
+  }
+
+  const { items, maxValue } = chartData
+  const innerWidth = width - MARGIN.left - MARGIN.right
+  const innerHeight = height - MARGIN.top - MARGIN.bottom
+
+  const xScale = d3.scaleLinear()
+    .domain([0, maxValue * 1.1])
+    .range([0, innerWidth])
+
+  const yScale = d3.scaleBand()
+    .domain(items.map(d => d.territorio))
+    .range([0, innerHeight])
+    .padding(0.35)
+
+  const formatValue = (v) => {
+    if (v >= 1000000) return `R$ ${(v / 1000000).toFixed(1)}M`
+    if (v >= 1000) return `R$ ${(v / 1000).toFixed(0)}K`
+    return `R$ ${v.toFixed(0)}`
+  }
+
+  return (
+    <div className="card p-6">
+      <h3 className="text-lg font-semibold text-dark-700 mb-4">{title}</h3>
+
+      <svg width={width} height={height}>
+        <g transform={`translate(${MARGIN.left}, ${MARGIN.top})`}>
+          {/* Grid lines */}
+          {xScale.ticks(5).map((tick, i) => (
+            <line
+              key={i}
+              x1={xScale(tick)}
+              x2={xScale(tick)}
+              y1={0}
+              y2={innerHeight}
+              stroke="#e2e8f0"
+              strokeDasharray="4,4"
+            />
+          ))}
+
+          {/* X axis labels */}
+          {xScale.ticks(5).map((tick, i) => (
+            <text
+              key={i}
+              x={xScale(tick)}
+              y={innerHeight + 15}
+              textAnchor="middle"
+              fill="#64748b"
+              fontSize={10}
+            >
+              {formatValue(tick)}
+            </text>
+          ))}
+
+          {/* Lollipops */}
+          {items.map((item, i) => {
+            const y = yScale(item.territorio) + yScale.bandwidth() / 2
+            const xEnd = xScale(item.preco_medio)
+            const color = CATEGORY_COLORS[item.categoria_dominante] || '#64748b'
+
+            return (
+              <g
+                key={item.territorio}
+                className="group cursor-pointer"
+                onClick={() => onTerritorioClick?.(item.territorio)}
+              >
+                {/* Hover background */}
+                <rect
+                  x={-MARGIN.left}
+                  y={yScale(item.territorio) - 2}
+                  width={innerWidth + MARGIN.left + MARGIN.right}
+                  height={yScale.bandwidth() + 4}
+                  fill="#f1f5f9"
+                  fillOpacity={0}
+                  className="group-hover:fill-opacity-100 transition-all"
+                />
+
+                {/* Line */}
+                <line
+                  x1={0}
+                  x2={xEnd}
+                  y1={y}
+                  y2={y}
+                  stroke={color}
+                  strokeWidth={2}
+                />
+
+                {/* Circle */}
+                <circle
+                  cx={xEnd}
+                  cy={y}
+                  r={7}
+                  fill={color}
+                  stroke="white"
+                  strokeWidth={2}
+                >
+                  <title>
+                    {`${item.territorio}\nPreco Medio: ${formatValue(item.preco_medio)}\nRegistros: ${item.count}`}
+                  </title>
+                </circle>
+
+                {/* Value label on hover */}
+                <text
+                  x={xEnd + 12}
+                  y={y}
+                  alignmentBaseline="middle"
+                  fill="#334155"
+                  fontSize={11}
+                  fontFamily="monospace"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  {formatValue(item.preco_medio)}
+                </text>
+
+                {/* Y axis label */}
+                <text
+                  x={-8}
+                  y={y}
+                  textAnchor="end"
+                  alignmentBaseline="middle"
+                  fill="#334155"
+                  fontSize={10}
+                >
+                  {item.territorio.length > 22 ? item.territorio.slice(0, 19) + '...' : item.territorio}
+                </text>
+
+                {/* Category indicator */}
+                <circle
+                  cx={-MARGIN.left + 10}
+                  cy={y}
+                  r={4}
+                  fill={color}
+                />
+              </g>
+            )
+          })}
+        </g>
+      </svg>
+
+      {/* Legend */}
+      <div className="mt-4 flex flex-wrap justify-center gap-4">
+        {Object.entries(CATEGORY_COLORS).map(([cat, color]) => (
+          <div key={cat} className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
+            <span className="text-xs text-dark-600">Classe {cat}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}

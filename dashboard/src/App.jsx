@@ -14,6 +14,8 @@ import TerritoryChart from './components/TerritoryChart';
 import RankingTable from './components/RankingTable';
 import MapChart from './components/MapChart';
 import PriceSearch from './components/PriceSearch';
+import RadarChart from './components/RadarChart';
+import LollipopChart from './components/LollipopChart';
 import Footer from './components/Footer';
 import Loading from './components/Loading';
 
@@ -196,6 +198,22 @@ export default function App() {
             {activeTab === 'territorial' && (
               <>
                 <TerritoryChart data={aggregates} nivel="Regional IDR-Paran\u00e1" rows={aggregates.byRegIdr} />
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <LollipopChart
+                    data={aggregates}
+                    title="Ranking de Territorios por Valor"
+                    width={550}
+                    height={450}
+                    limit={12}
+                    onTerritorioClick={handleTerritorioClick}
+                  />
+                  <RadarChart
+                    data={aggregates}
+                    title="Comparativo Regional por Categoria"
+                    width={450}
+                    height={450}
+                  />
+                </div>
                 <RankingTable
                   data={aggregates}
                   title="Ranking territorial"
