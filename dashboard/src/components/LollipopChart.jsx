@@ -22,36 +22,25 @@ export default function LollipopChart({
 
     let items = []
 
-    // Handle array format (byTerritorio is an array)
+    // Handle array of objects format: [{territorio, media, registros, ...}]
     if (data.byTerritorio && Array.isArray(data.byTerritorio)) {
       items = data.byTerritorio
-        .filter(d => d && d[1] && d[1].media > 0)
+        .filter(d => d && d.territorio && d.media > 0)
         .map(d => ({
-          territorio: d[0] || 'Desconhecido',
-          preco_medio: d[1].media || 0,
-          count: d[1].count || 0,
-          categoria_dominante: d[1].categoria_dominante || 'A'
-        }))
-    }
-    // Handle object format (byTerritorio as object with keys)
-    else if (data.byTerritorio && typeof data.byTerritorio === 'object') {
-      items = Object.entries(data.byTerritorio)
-        .filter(([_, d]) => d && d.media > 0)
-        .map(([name, d]) => ({
-          territorio: name,
-          preco_medio: d.media || 0,
-          count: d.count || 0,
+          territorio: d.territorio,
+          preco_medio: d.media,
+          count: d.registros || 0,
           categoria_dominante: d.categoria_dominante || 'A'
         }))
     }
-    // Handle direct array (rows prop)
+    // Handle direct array (rows prop with same object format)
     else if (Array.isArray(data)) {
       items = data
         .filter(d => d && (d.media > 0 || d.preco_medio > 0))
         .map(d => ({
-          territorio: d.territorio || d.name || d[0] || 'Desconhecido',
+          territorio: d.territorio || d.name || 'Desconhecido',
           preco_medio: d.media || d.preco_medio || 0,
-          count: d.count || 0,
+          count: d.registros || d.count || 0,
           categoria_dominante: d.categoria_dominante || 'A'
         }))
     }

@@ -13,27 +13,27 @@ export default function RadarChart({
   const chartData = useMemo(() => {
     if (!data) return null
 
-    // Extract categories - handle array format [categoria, {media, count}]
+    // Extract categories - handle array of objects format [{categoria, media, ...}]
     let categories = []
     if (data.byCategoria && Array.isArray(data.byCategoria)) {
       categories = data.byCategoria
-        .filter(d => d && d[0] && d[1] && d[1].media > 0)
+        .filter(d => d && d.categoria && d.media > 0)
         .map(d => ({
-          name: d[0],
-          media: d[1].media
+          name: d.categoria,
+          media: d.media
         }))
     }
 
-    // Extract territories - handle array format [territorio, {media, count}]
+    // Extract territories - handle array of objects format [{territorio, media, ...}]
     let territories = []
     if (data.byTerritorio && Array.isArray(data.byTerritorio)) {
       territories = data.byTerritorio
-        .filter(d => d && d[0] && d[1] && d[1].media > 0)
-        .sort((a, b) => b[1].media - a[1].media)
+        .filter(d => d && d.territorio && d.media > 0)
+        .sort((a, b) => b.media - a.media)
         .slice(0, 5)
         .map(d => ({
-          name: d[0],
-          media: d[1].media
+          name: d.territorio,
+          media: d.media
         }))
     }
 
