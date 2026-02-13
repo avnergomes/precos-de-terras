@@ -99,7 +99,21 @@ export default function App() {
   }, [metadata]);
 
   const filteredData = useFilteredData(detailed, filters);
-  const aggregates = useAggregations(filteredData, filters, geoData);
+
+  // Aplica filtros interativos aos dados filtrados
+  const interactiveFilteredData = useMemo(() => {
+    if (!filteredData?.length) return filteredData;
+
+    return filteredData.filter(item => {
+      if (interactiveFilters.categoria && item.categoria !== interactiveFilters.categoria) return false;
+      if (interactiveFilters.subcategoria && item.subcategoria !== interactiveFilters.subcategoria) return false;
+      if (interactiveFilters.territorio && item.territorio_nome !== interactiveFilters.territorio) return false;
+      if (interactiveFilters.ano && item.ano !== interactiveFilters.ano) return false;
+      return true;
+    });
+  }, [filteredData, interactiveFilters]);
+
+  const aggregates = useAggregations(interactiveFilteredData, filters, geoData);
 
   const filterSummary = useMemo(() => {
     const [anoMin, anoMax] = filters.anos || [];
@@ -151,6 +165,12 @@ export default function App() {
         />
 
         <div className="text-sm text-neutral-500">{filterSummary}</div>
+
+        <ActiveFilters
+          filters={interactiveFilters}
+          onRemove={handleRemoveInteractiveFilter}
+          onClear={clearInteractiveFilters}
+        />
 
         <ClasseLegend />
 
