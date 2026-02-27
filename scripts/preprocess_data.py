@@ -1,4 +1,4 @@
-﻿import csv
+import csv
 import json
 import os
 import re
@@ -32,21 +32,21 @@ CATEGORIA_MAP = {
 }
 
 SUBCATEGORIA_MAP = {
-    # Roxa (mais fÃ©rtil)
+    # Roxa (mais fértil)
     'Roxa|Mecanizada': 'A-I',
-    'Roxa|MecanizÃ¡vel': 'A-II',
-    'Roxa|NÃ£o MecanizÃ¡vel': 'B-VI',
-    'Roxa|InaproveitÃ¡veis': 'C-VIII',
-    # Mista (mÃ©dia)
+    'Roxa|Mecanizável': 'A-II',
+    'Roxa|Não Mecanizável': 'B-VI',
+    'Roxa|Inaproveitáveis': 'C-VIII',
+    # Mista (média)
     'Mista|Mecanizada': 'A-II',
-    'Mista|MecanizÃ¡vel': 'A-III',
-    'Mista|NÃ£o MecanizÃ¡vel': 'B-VII',
-    'Mista|InaproveitÃ¡veis': 'C-VIII',
-    # Arenosa (menos fÃ©rtil)
+    'Mista|Mecanizável': 'A-III',
+    'Mista|Não Mecanizável': 'B-VII',
+    'Mista|Inaproveitáveis': 'C-VIII',
+    # Arenosa (menos fértil)
     'Arenosa|Mecanizada': 'A-III',
-    'Arenosa|MecanizÃ¡vel': 'A-IV',
-    'Arenosa|NÃ£o MecanizÃ¡vel': 'B-VII',
-    'Arenosa|InaproveitÃ¡veis': 'C-VIII',
+    'Arenosa|Mecanizável': 'A-IV',
+    'Arenosa|Não Mecanizável': 'B-VII',
+    'Arenosa|Inaproveitáveis': 'C-VIII',
 }
 
 BAD_MUNICIPIO_TOKENS = {
@@ -90,7 +90,7 @@ def normalizar_nomenclatura(categoria, subcategoria):
 
     classe = None
 
-    # Se jÃ¡ estÃ¡ no formato novo (A-I, B-VI, etc.)
+    # Se já está no formato novo (A-I, B-VI, etc.)
     if categoria == 'Classe de Capacidade de Uso' and subcategoria and re.match(r'^[ABC]-[IVX]+$', subcategoria):
         classe = subcategoria
     else:
@@ -103,14 +103,14 @@ def normalizar_nomenclatura(categoria, subcategoria):
         grupo = classe[0]  # Primeira letra: A, B ou C
         return grupo, classe
 
-    # Fallback: mantÃ©m original
+    # Fallback: mantém original
     return categoria, subcategoria
 
 
 def load_municipios_map():
-    """Carrega mapeamento de municÃ­pios para regiÃ£o e mesorregiÃ£o do mun_PR.json."""
+    """Carrega mapeamento de municípios para região e mesorregião do mun_PR.json."""
     if not os.path.exists(MUN_PR_PATH):
-        print(f'Aviso: {MUN_PR_PATH} nÃ£o encontrado. RegiÃ£o/mesorregiÃ£o nÃ£o serÃ£o incluÃ­das.')
+        print(f'Aviso: {MUN_PR_PATH} não encontrado. Região/mesorregião não serão incluídas.')
         return {}
 
     with open(MUN_PR_PATH, encoding='utf-8') as f:
@@ -188,7 +188,7 @@ def main():
         if not csv_files:
             raise SystemExit('Nenhum CSV encontrado em data/extracted.')
 
-    # Carrega mapeamento de municÃ­pios para regiÃ£o/mesorregiÃ£o
+    # Carrega mapeamento de municípios para região/mesorregião
     mun_map = load_municipios_map()
 
     rows = []
