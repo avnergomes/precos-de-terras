@@ -27,7 +27,7 @@ jobs:
 
       - name: Install
         working-directory: dashboard
-        run: npm install
+        run: npm ci
 
       - name: Build
         working-directory: dashboard
