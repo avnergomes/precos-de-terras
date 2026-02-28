@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 
 const BASE_URL = import.meta.env.BASE_URL || '/';
 
@@ -115,16 +115,17 @@ export function useData() {
   const [geoData, setGeoData] = useState(null);
   const [metadata, setMetadata] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isGeoLoading, setIsGeoLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Carregar dados essenciais na inicialização (detailed + aggregated)
   useEffect(() => {
     async function loadData() {
       try {
         setLoading(true);
-        const [detailedRes, aggregatedRes, geoRes] = await Promise.all([
+        const [detailedRes, aggregatedRes] = await Promise.all([
           fetch(`${BASE_URL}data/detailed.json`),
-          fetch(`${BASE_URL}data/aggregated.json`),
-          fetch(`${BASE_URL}data/territorios.geojson`)
+          fetch(`${BASE_URL}data/aggregated.json`)
         ]);
 
         if (!detailedRes.ok) {
@@ -134,18 +135,12 @@ export function useData() {
         const detailedData = await detailedRes.json();
         setDetailed(detailedData || []);
 
-        let geoJson = null;
-        if (geoRes.ok) {
-          geoJson = await geoRes.json();
-          setGeoData(geoJson);
-        }
-
         if (aggregatedRes.ok) {
           const aggregatedData = await aggregatedRes.json();
           setAggregated(aggregatedData);
-          setMetadata(buildMetadata(detailedData, aggregatedData, geoJson));
+          setMetadata(buildMetadata(detailedData, aggregatedData, null));
         } else {
-          setMetadata(buildMetadata(detailedData, null, geoJson));
+          setMetadata(buildMetadata(detailedData, null, null));
         }
       } catch (err) {
         setError(err.message);
@@ -158,7 +153,33 @@ export function useData() {
     loadData();
   }, []);
 
-  return { detailed, aggregated, geoData, metadata, loading, error };
+  // Função para carregar territorios.geojson sob demanda (48MB)
+  const loadGeoData = useCallback(async () => {
+    if (geoData || isGeoLoading) return;
+
+    try {
+      setIsGeoLoading(true);
+      const res = await fetch(`${BASE_URL}data/territorios.geojson`);
+      if (!res.ok) {
+        throw new Error('Erro ao carregar dados geográficos');
+      }
+      const geoJson = await res.json();
+      setGeoData(geoJson);
+
+      // Atualizar metadata com os municípios do GeoJSON
+      setMetadata(prev => {
+        if (!prev) return prev;
+        return filterMunicipiosByGeo(prev, geoJson);
+      });
+    } catch (err) {
+      setError(err.message);
+      console.error('Erro ao carregar dados geográficos:', err);
+    } finally {
+      setIsGeoLoading(false);
+    }
+  }, [geoData, isGeoLoading]);
+
+  return { detailed, aggregated, geoData, metadata, loading, isGeoLoading, error, loadGeoData };
 }
 
 export function useFilteredData(detailed, filters) {
