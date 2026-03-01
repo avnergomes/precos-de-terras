@@ -209,7 +209,7 @@ export default function MapChart({ data, geoData, nivel, onTerritorioClick, sele
   if (!geoData) {
     return (
       <div className="chart-container">
-        <div className="text-sm text-neutral-500">GeoJSON nao encontrado.</div>
+        <div className="animate-pulse text-sm text-neutral-500">Carregando dados geográficos...</div>
       </div>
     );
   }

@@ -20,7 +20,7 @@ import Footer from './components/Footer';
 import Loading from './components/Loading';
 
 export default function App() {
-  const { detailed, geoData, metadata, loading, error } = useData();
+  const { detailed, geoData, metadata, loading, error, loadGeoData } = useData();
 
   const [filters, setFilters] = useState({
     anos: [0, 0],
@@ -97,6 +97,13 @@ export default function App() {
       }));
     }
   }, [metadata]);
+
+  // Lazy load GeoJSON when mapa tab is activated
+  useEffect(() => {
+    if (activeTab === 'mapa' && !geoData) {
+      loadGeoData();
+    }
+  }, [activeTab, geoData, loadGeoData]);
 
   const filteredData = useFilteredData(detailed, filters);
 
