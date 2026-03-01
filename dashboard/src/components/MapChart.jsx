@@ -28,6 +28,7 @@ export default function MapChart({ data, geoData, nivel, onTerritorioClick, sele
   const mapInstanceRef = useRef(null);
   const layerRef = useRef(null);
   const [metric, setMetric] = useState('media');
+  const [mapReady, setMapReady] = useState(false);
 
   const valuesByCode = useMemo(() => {
     const map = new Map();
@@ -68,10 +69,15 @@ export default function MapChart({ data, geoData, nivel, onTerritorioClick, sele
     };
   }, [data, metric]);
 
+  // Effect 1: Criar instância do mapa Leaflet
   useEffect(() => {
     if (!mapRef.current || !filteredGeo || mapInstanceRef.current) return;
 
+    let cancelled = false;
+
     import('leaflet').then(L => {
+      if (cancelled) return;
+
       const map = L.map(mapRef.current, {
         center: [-24.7, -51.5],
         zoom: 7,
@@ -86,12 +92,15 @@ export default function MapChart({ data, geoData, nivel, onTerritorioClick, sele
       }).addTo(map);
 
       mapInstanceRef.current = map;
+      setMapReady(true);  // <-- Sinaliza que o mapa está pronto
     });
 
     return () => {
+      cancelled = true;
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
+        setMapReady(false);
       }
     };
   }, [filteredGeo]);
@@ -107,8 +116,9 @@ export default function MapChart({ data, geoData, nivel, onTerritorioClick, sele
     });
   }, [filteredGeo, valuesByCode, valuesByName]);
 
+  // Effect 2: Adicionar/atualizar GeoJSON layer (agora depende de mapReady)
   useEffect(() => {
-    if (!mapInstanceRef.current || !filteredGeo) return;
+    if (!mapReady || !mapInstanceRef.current || !filteredGeo) return;
 
     import('leaflet').then(L => {
       if (layerRef.current) {
@@ -197,14 +207,13 @@ export default function MapChart({ data, geoData, nivel, onTerritorioClick, sele
           mapInstanceRef.current.fitBounds(bounds, { padding: [20, 20], maxZoom: 10 });
         }
       } else if (filteredGeo.features.length > 0) {
-        // Se todos os municípios têm dados ou nenhum filtro específico, mostra todo o estado
         const bounds = geoLayer.getBounds();
         if (bounds.isValid()) {
           mapInstanceRef.current.fitBounds(bounds, { padding: [20, 20], maxZoom: 10 });
         }
       }
     });
-  }, [filteredGeo, valuesByCode, valuesByName, metric, minVal, maxVal, featuresWithData]);
+  }, [mapReady, filteredGeo, valuesByCode, valuesByName, metric, minVal, maxVal, featuresWithData]);
 
   if (!geoData) {
     return (
