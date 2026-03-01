@@ -120,62 +120,86 @@ export function useData() {
 
   // Carregar dados essenciais na inicialização (detailed + aggregated)
   useEffect(() => {
+    const controller = new AbortController();
+    const { signal } = controller;
+
     async function loadData() {
       try {
         setLoading(true);
         const [detailedRes, aggregatedRes] = await Promise.all([
-          fetch(`${BASE_URL}data/detailed.json`),
-          fetch(`${BASE_URL}data/aggregated.json`)
+          fetch(`${BASE_URL}data/detailed.json`, { signal }),
+          fetch(`${BASE_URL}data/aggregated.json`, { signal })
         ]);
+
+        if (signal.aborted) return;
 
         if (!detailedRes.ok) {
           throw new Error('Erro ao carregar dados detalhados');
         }
 
         const detailedData = await detailedRes.json();
+
+        if (signal.aborted) return;
+
         setDetailed(detailedData || []);
 
         if (aggregatedRes.ok) {
           const aggregatedData = await aggregatedRes.json();
-          setAggregated(aggregatedData);
-          setMetadata(buildMetadata(detailedData, aggregatedData, null));
+          if (!signal.aborted) {
+            setAggregated(aggregatedData);
+            setMetadata(buildMetadata(detailedData, aggregatedData, null));
+          }
         } else {
-          setMetadata(buildMetadata(detailedData, null, null));
+          if (!signal.aborted) {
+            setMetadata(buildMetadata(detailedData, null, null));
+          }
         }
       } catch (err) {
-        setError(err.message);
-        console.error('Erro ao carregar dados:', err);
+        if (err.name !== 'AbortError' && !signal.aborted) {
+          setError(err.message);
+          console.error('Erro ao carregar dados:', err);
+        }
       } finally {
-        setLoading(false);
+        if (!signal.aborted) {
+          setLoading(false);
+        }
       }
     }
 
     loadData();
+    return () => controller.abort();
   }, []);
 
   // Função para carregar territorios.geojson sob demanda (48MB)
   const loadGeoData = useCallback(async () => {
     if (geoData || isGeoLoading) return;
 
+    const controller = new AbortController();
     try {
       setIsGeoLoading(true);
-      const res = await fetch(`${BASE_URL}data/territorios.geojson`);
+      const res = await fetch(`${BASE_URL}data/territorios.geojson`, { signal: controller.signal });
       if (!res.ok) {
         throw new Error('Erro ao carregar dados geográficos');
       }
       const geoJson = await res.json();
-      setGeoData(geoJson);
+      if (!controller.signal.aborted) {
+        setGeoData(geoJson);
 
-      // Atualizar metadata com os municípios do GeoJSON
-      setMetadata(prev => {
-        if (!prev) return prev;
-        return filterMunicipiosByGeo(prev, geoJson);
-      });
+        // Atualizar metadata com os municípios do GeoJSON
+        setMetadata(prev => {
+          if (!prev) return prev;
+          return filterMunicipiosByGeo(prev, geoJson);
+        });
+      }
     } catch (err) {
-      setError(err.message);
-      console.error('Erro ao carregar dados geográficos:', err);
+      if (err.name !== 'AbortError') {
+        setError(err.message);
+        console.error('Erro ao carregar dados geográficos:', err);
+      }
     } finally {
-      setIsGeoLoading(false);
+      if (!controller.signal.aborted) {
+        setIsGeoLoading(false);
+      }
     }
   }, [geoData, isGeoLoading]);
 
