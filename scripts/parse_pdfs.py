@@ -17,9 +17,9 @@ RAW_SOIL_TYPES = {
     'Mista',
     'Arenosa',
     'Organica',
-    'OrgÃ¢nica',
+    'Orgânica',
     'Hidromorfica',
-    'HidromÃ³rfica',
+    'Hidromórfica',
     'Brunada',
     'Brunizada',
 }
@@ -33,9 +33,9 @@ CLASS_NAMES = [
 
 CLASS_DISPLAY = {
     'mecanizada': 'Mecanizada',
-    'mecanizavel': 'MecanizÃ¡vel',
-    'nao mecanizavel': 'NÃ£o MecanizÃ¡vel',
-    'inaproveitaveis': 'InaproveitÃ¡veis',
+    'mecanizavel': 'Mecanizável',
+    'nao mecanizavel': 'Não Mecanizável',
+    'inaproveitaveis': 'Inaproveitáveis',
 }
 
 BAD_MUNICIPIO_TOKENS = {
