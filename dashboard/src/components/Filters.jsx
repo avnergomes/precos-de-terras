@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Filter, ChevronDown, ChevronUp, RotateCcw, Download } from 'lucide-react';
+import { Filter, ChevronDown, RotateCcw, Download } from 'lucide-react';
 import { getClasseLabel, isNovoFormato } from '../utils/nomenclatura';
 
 export default function Filters({ metadata, detailed, filters, onFiltersChange, filteredData }) {
@@ -54,14 +54,15 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
     });
   };
 
-  const hasActiveFilters =
-    territorios.length > 0 ||
-    categorias.length > 0 ||
-    subcategorias.length > 0 ||
-    regioes?.length > 0 ||
-    mesorregioes?.length > 0 ||
-    anoMin !== metadata.anoMin ||
-    anoMax !== metadata.anoMax;
+  const activeFilterCount =
+    (territorios.length > 0 ? 1 : 0) +
+    (categorias.length > 0 ? 1 : 0) +
+    (subcategorias.length > 0 ? 1 : 0) +
+    ((regioes?.length > 0) ? 1 : 0) +
+    ((mesorregioes?.length > 0) ? 1 : 0) +
+    (anoMin !== metadata.anoMin || anoMax !== metadata.anoMax ? 1 : 0);
+
+  const hasActiveFilters = activeFilterCount > 0;
 
   const handleExportCSV = () => {
     if (!filteredData?.length) return;
@@ -103,7 +104,7 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
           </div>
           <h2 className="text-lg font-display font-bold text-earth-900">Filtros</h2>
           {hasActiveFilters && (
-            <span className="badge badge-green">Ativos</span>
+            <span className="active-filter-badge">{activeFilterCount}</span>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -129,17 +130,16 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
           <button
             onClick={() => setIsExpanded(!isExpanded)}
             className="p-2 hover:bg-earth-100 rounded-lg transition-colors"
+            aria-label={isExpanded ? 'Recolher filtros' : 'Expandir filtros'}
           >
-            {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-earth-500" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-earth-500" />
-            )}
+            <ChevronDown
+              className={`w-5 h-5 text-earth-500 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+            />
           </button>
         </div>
       </div>
 
-      {isExpanded && (
+      <div className={`filter-panel ${isExpanded ? '' : 'collapsed'}`}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           <div className="lg:col-span-2">
             <label className="filter-label">Periodo</label>
@@ -217,7 +217,7 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
             />
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

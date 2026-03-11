@@ -90,6 +90,61 @@
   .badge-blue {
     @apply bg-secondary-100 text-secondary-800;
   }
+
+  /* Filter panel collapse animation */
+  .filter-panel {
+    display: grid;
+    grid-template-rows: 1fr;
+    opacity: 1;
+    transition: grid-template-rows 0.3s ease, opacity 0.25s ease;
+  }
+
+  .filter-panel.collapsed {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+
+  .filter-panel > div {
+    overflow: hidden;
+  }
+
+  /* Skeleton shimmer */
+  .skeleton {
+    @apply rounded-2xl bg-neutral-200 relative overflow-hidden;
+  }
+
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.4) 50%,
+      transparent 100%
+    );
+    animation: shimmer 1.5s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  /* Chart container title & description */
+  .chart-container-title {
+    @apply text-base font-display font-bold text-dark-900 mb-1;
+  }
+
+  .chart-container-desc {
+    @apply text-sm text-neutral-500 mb-4;
+  }
+
+  /* Active filter count badge */
+  .active-filter-badge {
+    @apply inline-flex items-center justify-center w-5 h-5 text-[10px] font-bold
+           rounded-full bg-primary-600 text-white leading-none;
+  }
 }
 
 @layer utilities {

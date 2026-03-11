@@ -50,6 +50,24 @@ function Tooltip({ text, children }) {
 }
 
 export default function KpiCards({ data }) {
+  if (!data) {
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="stat-card">
+            <div className="flex items-center justify-between">
+              <div className="space-y-3 flex-1">
+                <div className="skeleton h-4 w-24" />
+                <div className="skeleton h-8 w-32" />
+              </div>
+              <div className="skeleton h-11 w-11 rounded-xl" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
   const growthPositive = data.cagr >= 0;
 
   const accents = {
