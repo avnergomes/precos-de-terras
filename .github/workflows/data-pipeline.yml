@@ -1,6 +1,8 @@
 name: Data Pipeline - Process Land Prices
 
 on:
+  schedule:
+    - cron: '0 6 20 1 *'  # 20 de Janeiro, 6h UTC (dados anuais DERAL)
   # Manual trigger - execute quando novos PDFs forem adicionados
   workflow_dispatch:
     inputs:
