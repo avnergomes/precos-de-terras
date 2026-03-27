@@ -32,7 +32,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install pandas numpy pdfplumber tabula-py pypdf
+          pip install -r scripts/requirements.txt
           # Java para tabula
           sudo apt-get update && sudo apt-get install -y default-jre
 
