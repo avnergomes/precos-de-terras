@@ -24,3 +24,9 @@ Thumbs.db
 
 # Google Apps Script (secrets)
 *.gs
+
+# Claude Code
+.claude/
+CLAUDE.md
+.claudeignore
+
