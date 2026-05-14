@@ -1,12 +1,13 @@
+// ATLAS-A11Y-HEX-SWEPT
 import { useMemo } from 'react'
 import * as d3 from 'd3'
 
 const MARGIN = { top: 20, right: 80, bottom: 20, left: 160 }
 
 const CATEGORY_COLORS = {
-  'A': '#22c55e',
+  'A': '#0072B2',
   'B': '#eab308',
-  'C': '#ef4444',
+  'C': '#D55E00',
 }
 
 export default function LollipopChart({
@@ -113,7 +114,7 @@ export default function LollipopChart({
               x={xScale(tick)}
               y={innerHeight + 15}
               textAnchor="middle"
-              fill="#64748b"
+              fill="#6e6453"
               fontSize={10}
             >
               {formatValue(tick)}
@@ -124,7 +125,7 @@ export default function LollipopChart({
           {items.map((item, i) => {
             const y = yScale(item.territorio) + yScale.bandwidth() / 2
             const xEnd = xScale(item.preco_medio)
-            const color = CATEGORY_COLORS[item.categoria_dominante] || '#64748b'
+            const color = CATEGORY_COLORS[item.categoria_dominante] || '#6e6453'
 
             return (
               <g

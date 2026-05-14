@@ -1,3 +1,4 @@
+// ATLAS-A11Y-HEX-SWEPT
 import { useMemo, useState } from 'react'
 import * as d3 from 'd3'
 
@@ -98,7 +99,7 @@ export default function RadarChart({
   }
 
   // Color palette for territories
-  const colors = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6']
+  const colors = ['#3b82f6', '#0072B2', '#c89b3c', '#D55E00', '#CC79A7']
 
   return (
     <div className="bg-white rounded-xl border border-neutral-100 p-6">
@@ -124,7 +125,7 @@ export default function RadarChart({
               key={i}
               x={4}
               y={-radius * level - 3}
-              fill="#94a3b8"
+              fill="#918058"
               fontSize={9}
             >
               {formatValue(maxValue * level)}
