@@ -404,8 +404,11 @@ export function useAggregations(filteredData, filters, geoData) {
       })
       .sort((a, b) => b.media - a.media);
 
+    // Usa a regional vinda do próprio registro (row.regiao); o GeoJSON só
+    // carrega na aba Mapa e antes disso tudo caía em "Sem regional IDR".
     const municipioToRegIdr = buildMunicipioToRegIdr(geoData);
     const byRegIdr = Array.from(groupBy(filteredData, row => {
+      if (row.regiao) return row.regiao;
       const municipio = row.territorio || '';
       const regIdr = municipioToRegIdr.get(normalizeKey(municipio));
       return regIdr || 'Sem regional IDR';

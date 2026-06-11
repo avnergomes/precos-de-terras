@@ -4,15 +4,17 @@ import { Layers3, TrendingUp, Grid3X3, X } from 'lucide-react';
 import { formatCurrency } from '../utils/format';
 import { getClasseLabel } from '../utils/nomenclatura';
 
+// Rampas de matiz unico por grupo (forest/water/clay do design system Atlas),
+// com passos de luminancia maiores para distinguibilidade (antes 4 verdes proximos)
 const SUBCATEGORIA_COLORS = {
-  'A-I': '#2d6a4f',
-  'A-II': '#40916c',
-  'A-III': '#52b788',
-  'A-IV': '#74c69d',
-  'B-V': '#1d4e89',
-  'B-VI': '#2a6db0',
-  'B-VII': '#4a90d9',
-  'C-VIII': '#9d4edd',
+  'A-I': '#232f17',
+  'A-II': '#3d5320',
+  'A-III': '#678338',
+  'A-IV': '#aabe7c',
+  'B-V': '#1a3445',
+  'B-VI': '#3d729c',
+  'B-VII': '#87afcd',
+  'C-VIII': '#893824',
 };
 
 function CustomTooltip({ active, payload }) {
@@ -154,7 +156,7 @@ export default function CategoryChart({ data }) {
           <div className="p-2 bg-accent-100 rounded-lg">
             <Layers3 className="w-5 h-5 text-accent-600" />
           </div>
-          <h3 className="section-title">Distribuicao por categoria</h3>
+          <h3 className="section-title">Distribuição por categoria</h3>
         </div>
         <div className="text-sm text-neutral-500">Sem dados para o periodo selecionado.</div>
       </div>
@@ -170,7 +172,7 @@ export default function CategoryChart({ data }) {
             <div className="p-2 bg-accent-100 rounded-lg">
               <Layers3 className="w-5 h-5 text-accent-600" />
             </div>
-            <h3 className="section-title">Distribuicao por categoria</h3>
+            <h3 className="section-title">Distribuição por categoria</h3>
           </div>
 
           <div className="flex gap-1 bg-earth-100 p-1 rounded-lg">
@@ -239,7 +241,7 @@ export default function CategoryChart({ data }) {
             <div className="p-2 bg-primary-100 rounded-lg">
               <TrendingUp className="w-5 h-5 text-primary-600" />
             </div>
-            <h3 className="section-title">Evolucao historica por classe</h3>
+            <h3 className="section-title">Evolução histórica por classe</h3>
           </div>
 
           {selectedSubcategorias.length > 0 && (

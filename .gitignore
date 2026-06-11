@@ -51,3 +51,6 @@ CLAUDE.md
 # Repo-specific
 !.env.example
 *.gs
+
+# Artefatos locais do understand-anything
+.understand-anything/

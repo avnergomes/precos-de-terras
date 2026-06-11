@@ -79,6 +79,11 @@ def is_valid_municipio(value):
         return False
     if normalized.startswith('pagina'):
         return False
+    # Linhas de cabecalho/classe que escapavam do parser e poluiam o dropdown
+    if normalized.startswith(('municipio classe', 'classe ', 'grau ')):
+        return False
+    if ' - -' in normalized or normalized.endswith(' -'):
+        return False
     if re.fullmatch(r'[\-\s]+', normalized):
         return False
     return True
@@ -228,11 +233,11 @@ def main():
     aggregated_path = os.path.join(OUTPUT_DIR, 'aggregated.json')
 
     with open(detailed_path, 'w', encoding='utf-8') as handle:
-        json.dump(rows, handle, ensure_ascii=False, indent=2)
+        json.dump(rows, handle, ensure_ascii=False, separators=(",", ":"))
 
     metadata = build_metadata(rows)
     with open(aggregated_path, 'w', encoding='utf-8') as handle:
-        json.dump({'metadata': metadata}, handle, ensure_ascii=False, indent=2)
+        json.dump({'metadata': metadata}, handle, ensure_ascii=False, separators=(',', ':'))
 
     print(f'Gerados: {detailed_path} e {aggregated_path}')
 

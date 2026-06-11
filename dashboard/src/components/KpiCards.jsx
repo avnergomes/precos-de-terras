@@ -78,7 +78,7 @@ export default function KpiCards({ data }) {
 
   const kpis = [
     {
-      label: 'Preco medio',
+      label: 'Preço médio',
       value: formatCurrency(data.precoMedio),
       icon: Gauge,
       accent: 'primary',

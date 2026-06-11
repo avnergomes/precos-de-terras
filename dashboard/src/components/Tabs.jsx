@@ -2,7 +2,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const tabs = [
-  { id: 'overview', label: 'Visao Geral' },
+  { id: 'overview', label: 'Visão Geral' },
   { id: 'historico', label: 'Historico' },
   { id: 'categorias', label: 'Categorias' },
   { id: 'territorial', label: 'Territorial' },

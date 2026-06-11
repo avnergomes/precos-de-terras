@@ -4,6 +4,7 @@ import * as d3 from 'd3'
 
 export default function RadarChart({
   data,
+  rows = null,
   title = "Comparativo por Categoria",
   width = 450,
   height = 450,
@@ -40,10 +41,19 @@ export default function RadarChart({
 
     if (categories.length < 3 || territories.length === 0) return null
 
-    // Build radar data - each territory gets category values
-    // Since we don't have territory-category cross data, we'll show category distribution
-    const radarData = territories.map((territory, idx) => {
-      const values = categories.map(cat => cat.media)
+    // Cruzamento território × categoria calculado dos registros filtrados.
+    // (A versão anterior repetia a média geral por categoria em todos os
+    // territórios — os 5 polígonos eram idênticos, informação falsa.)
+    if (!rows?.length) return null
+
+    const radarData = territories.map((territory) => {
+      const values = categories.map(cat => {
+        const vals = rows
+          .filter(r => r.territorio === territory.name && r.categoria === cat.name && Number.isFinite(r.preco))
+          .map(r => r.preco)
+        if (vals.length === 0) return 0
+        return vals.reduce((a, b) => a + b, 0) / vals.length
+      })
       return {
         territory: territory.name,
         values,
@@ -51,11 +61,12 @@ export default function RadarChart({
       }
     })
 
-    const maxValue = Math.max(...categories.map(c => c.media))
+    const maxValue = Math.max(...radarData.flatMap(d => d.values), 0)
+    if (maxValue <= 0) return null
     const categoryNames = categories.map(c => c.name)
 
     return { radarData, categories: categoryNames, maxValue }
-  }, [data])
+  }, [data, rows])
 
   if (!chartData) {
     return (
@@ -98,8 +109,8 @@ export default function RadarChart({
     return `R$ ${v.toFixed(0)}`
   }
 
-  // Color palette for territories
-  const colors = ['#3b82f6', '#0072B2', '#c89b3c', '#D55E00', '#CC79A7']
+  // Paleta Okabe-Ito (azuis quase idênticos antes dificultavam distinguir séries)
+  const colors = ['#0072B2', '#E69F00', '#009E73', '#D55E00', '#CC79A7']
 
   return (
     <div className="bg-white rounded-xl border border-neutral-100 p-6">

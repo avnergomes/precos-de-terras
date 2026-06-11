@@ -5,13 +5,11 @@ import { getClasseLabel, isNovoFormato } from '../utils/nomenclatura';
 export default function Filters({ metadata, detailed, filters, onFiltersChange, filteredData }) {
   const [isExpanded, setIsExpanded] = useState(true);
 
-  if (!metadata) return null;
-
   const { anos, nivel, territorios, categorias, subcategorias, regioes, mesorregioes } = filters;
   const [anoMin, anoMax] = anos;
 
   const availableTerritorios = useMemo(() => {
-    if (!nivel || !metadata.territorios?.[nivel]) return [];
+    if (!nivel || !metadata?.territorios?.[nivel]) return [];
     return metadata.territorios[nivel];
   }, [metadata, nivel]);
 
@@ -31,7 +29,7 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
   }, [detailed, regioes, mesorregioes, availableTerritorios]);
 
   const availableSubcategorias = useMemo(() => {
-    if (!detailed?.length) return metadata.subcategorias || [];
+    if (!detailed?.length) return metadata?.subcategorias || [];
     const subset = detailed.filter(row =>
       (!categorias.length || categorias.includes(row.categoria))
     );
@@ -41,6 +39,9 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
     });
     return Array.from(set).sort();
   }, [detailed, categorias, metadata]);
+
+  // Early return só depois dos hooks (Rules of Hooks)
+  if (!metadata) return null;
 
   const handleReset = () => {
     onFiltersChange({
@@ -142,7 +143,7 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
       <div className={`filter-panel ${isExpanded ? '' : 'collapsed'}`}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           <div className="lg:col-span-2">
-            <label className="filter-label">Periodo</label>
+            <label className="filter-label">Período</label>
             <div className="flex items-center gap-3">
               <select
                 value={anoMin}
@@ -153,7 +154,7 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
                   <option key={ano} value={ano}>{ano}</option>
                 ))}
               </select>
-              <span className="text-earth-400 font-medium">ate</span>
+              <span className="text-earth-400 font-medium">até</span>
               <select
                 value={anoMax}
                 onChange={(e) => onFiltersChange({ ...filters, anos: [anoMin, parseInt(e.target.value, 10)] })}
@@ -167,7 +168,7 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
           </div>
 
           <div>
-            <label className="filter-label">Mesorregiao</label>
+            <label className="filter-label">Mesorregião</label>
             <MultiSelect
               options={metadata.mesorregioes || []}
               selected={mesorregioes || []}
@@ -177,7 +178,7 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
           </div>
 
           <div>
-            <label className="filter-label">Regiao</label>
+            <label className="filter-label">Região</label>
             <MultiSelect
               options={metadata.regioes || []}
               selected={regioes || []}
@@ -187,7 +188,7 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
           </div>
 
           <div>
-            <label className="filter-label">Municipio</label>
+            <label className="filter-label">Município</label>
             <MultiSelect
               options={availableTerritoriosByRegiao}
               selected={territorios}

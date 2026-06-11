@@ -114,7 +114,7 @@ export default function App() {
     return filteredData.filter(item => {
       if (interactiveFilters.categoria && item.categoria !== interactiveFilters.categoria) return false;
       if (interactiveFilters.subcategoria && item.subcategoria !== interactiveFilters.subcategoria) return false;
-      if (interactiveFilters.territorio && item.territorio_nome !== interactiveFilters.territorio) return false;
+      if (interactiveFilters.territorio && item.territorio !== interactiveFilters.territorio) return false;
       if (interactiveFilters.ano && item.ano !== interactiveFilters.ano) return false;
       return true;
     });
@@ -236,6 +236,7 @@ export default function App() {
                   />
                   <RadarChart
                     data={aggregates}
+                    rows={interactiveFilteredData}
                     title="Comparativo Regional por Categoria"
                     width={450}
                     height={450}

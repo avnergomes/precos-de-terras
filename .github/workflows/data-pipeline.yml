@@ -39,10 +39,12 @@ jobs:
           sudo apt-get update && sudo apt-get install -y default-jre
 
       - name: Extract PDFs
-        if: ${{ inputs.extract_pdfs }}
+        # No cron, inputs.extract_pdfs é vazio — sem o OR a extração nunca
+        # rodava nas execuções agendadas. Sem '|| true': falha deve falhar.
+        if: ${{ github.event_name == 'schedule' || inputs.extract_pdfs }}
         run: |
-          python scripts/extract_pdfs.py || true
-          python scripts/parse_pdfs.py || true
+          python scripts/extract_pdfs.py
+          python scripts/parse_pdfs.py
 
       - name: Preprocess data
         run: |
@@ -65,3 +67,17 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git commit -m "chore: update land prices data [skip ci]"
           git push
+
+      - name: Trigger deploy workflow
+        # O [skip ci] (e o GITHUB_TOKEN) impedem o deploy automático no push
+        # do bot; o dispatch garante que o site acompanhe os dados novos.
+        if: steps.changes.outputs.has_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.actions.createWorkflowDispatch({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              workflow_id: 'deploy.yml',
+              ref: 'main'
+            })
