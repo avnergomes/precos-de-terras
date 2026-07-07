@@ -116,7 +116,13 @@ export default function RadarChart({
     <div className="bg-white rounded-xl border border-neutral-100 p-6">
       <h3 className="text-lg font-semibold text-neutral-800 mb-4">{title}</h3>
 
-      <svg width={width} height={height} className="mx-auto">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        width="100%"
+        preserveAspectRatio="xMidYMid meet"
+        className="mx-auto"
+        style={{ maxWidth: width, height: 'auto', display: 'block' }}
+      >
         <g transform={`translate(${centerX}, ${centerY})`}>
           {/* Grid circles */}
           {gridCircles.map((level, i) => (

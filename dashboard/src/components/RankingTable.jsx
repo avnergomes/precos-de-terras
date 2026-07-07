@@ -21,7 +21,7 @@ export default function RankingTable({ data, title, levelLabel, rows, onTerritor
                 <tr className="text-left text-neutral-500 border-b border-neutral-200">
                   <th className="py-2 pr-4">Posicao</th>
                   <th className="py-2 pr-4">Territorio</th>
-                  <th className="py-2 pr-4">Preco medio</th>
+                  <th className="py-2 pr-4">Preço médio (R$/ha)</th>
                   <th className="py-2 pr-4">Min</th>
                   <th className="py-2">Max</th>
                 </tr>
@@ -54,9 +54,11 @@ export default function RankingTable({ data, title, levelLabel, rows, onTerritor
               </tbody>
             </table>
           </div>
-          <p className="text-xs text-center text-neutral-500 mt-3">
-            Clique em uma linha para filtrar
-          </p>
+          {onTerritorioClick && (
+            <p className="text-xs text-center text-neutral-500 mt-3">
+              Clique em uma linha para filtrar
+            </p>
+          )}
         </>
       )}
     </div>

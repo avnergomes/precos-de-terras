@@ -16,6 +16,17 @@
 
         function mount() {
           if (!document.body) return;
+          // Empilha o banner LGPD acima do convite ao hub (ambos fixos no
+          // rodapé), para que o botão "Entendi" continue visível e clicável.
+          function stackWithLgpd() {
+            var lgpd = document.getElementById('lgpd-banner');
+            if (!lgpd) return;
+            if (bar.parentNode && lgpd.style.display !== 'none') {
+              lgpd.style.bottom = bar.offsetHeight + 'px';
+            } else {
+              lgpd.style.bottom = '0px';
+            }
+          }
           var bar = document.createElement('div');
           bar.setAttribute('role', 'region');
           bar.setAttribute('aria-label', 'Datageo Paran\u00e1');
@@ -34,11 +45,14 @@
           btn.onclick = function () {
             try { localStorage.setItem(KEY, '1'); } catch (e) {}
             bar.parentNode && bar.parentNode.removeChild(bar);
+            stackWithLgpd();
           };
           bar.appendChild(span);
           bar.appendChild(a);
           bar.appendChild(btn);
           document.body.appendChild(bar);
+          stackWithLgpd();
+          window.addEventListener('resize', stackWithLgpd);
         }
         if (document.readyState === 'loading') {
           document.addEventListener('DOMContentLoaded', mount);

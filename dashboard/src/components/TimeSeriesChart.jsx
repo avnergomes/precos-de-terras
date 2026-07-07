@@ -19,7 +19,7 @@ export default function TimeSeriesChart({ data, onAnoClick, selectedAno }) {
           <div className="p-2 bg-water-100 rounded-lg">
             <CalendarRange className="w-5 h-5 text-water-600" />
           </div>
-          <h3 className="section-title">Serie historica de precos</h3>
+          <h3 className="section-title">Série histórica de preços (R$/ha)</h3>
         </div>
         <div className="text-sm text-neutral-500">Sem dados para o periodo selecionado.</div>
       </div>
@@ -88,9 +88,11 @@ export default function TimeSeriesChart({ data, onAnoClick, selectedAno }) {
         </ResponsiveContainer>
       </div>
 
-      <p className="text-xs text-center text-neutral-500 mt-2">
-        Clique em um ponto para filtrar por ano
-      </p>
+      {onAnoClick && (
+        <p className="text-xs text-center text-neutral-500 mt-2">
+          Clique em um ponto para filtrar por ano
+        </p>
+      )}
     </div>
   );
 }

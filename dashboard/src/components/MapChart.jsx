@@ -23,7 +23,7 @@ function normalizeKey(value) {
     .trim();
 }
 
-export default function MapChart({ data, geoData, nivel, onTerritorioClick, selectedTerritorio }) {
+export default function MapChart({ data, geoData, nivel, geoError, onRetryGeo, onTerritorioClick, selectedTerritorio }) {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const layerRef = useRef(null);
@@ -215,10 +215,27 @@ export default function MapChart({ data, geoData, nivel, onTerritorioClick, sele
     });
   }, [mapReady, filteredGeo, valuesByCode, valuesByName, metric, minVal, maxVal, featuresWithData]);
 
+  if (!geoData && geoError) {
+    return (
+      <div className="chart-container">
+        <div className="py-8 text-center space-y-3">
+          <p className="text-sm text-neutral-600">Não foi possível carregar os dados geográficos.</p>
+          <button
+            type="button"
+            onClick={() => onRetryGeo?.()}
+            className="px-4 py-2 text-sm bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (!geoData) {
     return (
       <div className="chart-container">
-        <div className="animate-pulse text-sm text-neutral-500">Carregando dados geográficos...</div>
+        <div className="animate-pulse text-sm text-neutral-500">Carregando dados geográficos (~2 MB)...</div>
       </div>
     );
   }

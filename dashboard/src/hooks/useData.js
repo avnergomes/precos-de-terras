@@ -117,6 +117,7 @@ export function useData() {
   const [loading, setLoading] = useState(true);
   const [isGeoLoading, setIsGeoLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [geoError, setGeoError] = useState(null);
 
   // Carregar dados essenciais na inicialização (detailed + aggregated)
   useEffect(() => {
@@ -177,6 +178,7 @@ export function useData() {
     const controller = new AbortController();
     try {
       setIsGeoLoading(true);
+      setGeoError(null);
       const res = await fetch(`${BASE_URL}data/territorios.geojson`, { signal: controller.signal });
       if (!res.ok) {
         throw new Error('Erro ao carregar dados geográficos');
@@ -193,7 +195,8 @@ export function useData() {
       }
     } catch (err) {
       if (err.name !== 'AbortError') {
-        setError(err.message);
+        // Erro isolado da camada geográfica: não derruba o dashboard inteiro.
+        setGeoError(err.message);
         console.error('Erro ao carregar dados geográficos:', err);
       }
     } finally {
@@ -203,7 +206,7 @@ export function useData() {
     }
   }, [geoData, isGeoLoading]);
 
-  return { detailed, aggregated, geoData, metadata, loading, isGeoLoading, error, loadGeoData };
+  return { detailed, aggregated, geoData, metadata, loading, isGeoLoading, error, geoError, loadGeoData };
 }
 
 export function useFilteredData(detailed, filters) {

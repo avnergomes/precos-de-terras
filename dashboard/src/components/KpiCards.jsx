@@ -24,6 +24,13 @@ function Tooltip({ text, children }) {
         ref={triggerRef}
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
+        onClick={() => setShow(true)}
+        onFocus={() => setShow(true)}
+        onBlur={() => setShow(false)}
+        onKeyDown={(e) => { if (e.key === 'Escape') setShow(false); }}
+        role="button"
+        tabIndex={0}
+        aria-label="Mais informações"
         className="cursor-help"
       >
         {children}
@@ -78,28 +85,28 @@ export default function KpiCards({ data }) {
 
   const kpis = [
     {
-      label: 'Preço médio',
+      label: 'Preço médio (R$/ha)',
       value: formatCurrency(data.precoMedio),
       icon: Gauge,
       accent: 'primary',
       tooltip: 'Media aritmetica dos precos por hectare no periodo e filtros selecionados',
     },
     {
-      label: 'Preco mediana',
+      label: 'Preço mediana (R$/ha)',
       value: formatCurrency(data.precoMediana),
       icon: Sigma,
       accent: 'secondary',
       tooltip: 'Valor central da distribuicao de precos. Menos sensivel a valores extremos que a media',
     },
     {
-      label: 'Menor valor',
+      label: 'Menor valor (R$/ha)',
       value: formatCurrency(data.precoMin),
       icon: TrendingDown,
       accent: 'accent',
       tooltip: 'Menor preco por hectare registrado no periodo e filtros selecionados',
     },
     {
-      label: 'Maior valor',
+      label: 'Maior valor (R$/ha)',
       value: formatCurrency(data.precoMax),
       icon: TrendingUp,
       accent: 'primary',
@@ -113,7 +120,7 @@ export default function KpiCards({ data }) {
       tooltip: 'Taxa de crescimento anual composta (CAGR). Indica a valorizacao media anual no periodo',
     },
     {
-      label: 'Volatilidade',
+      label: 'Volatilidade (R$/ha)',
       value: formatNumber(data.volatilidade),
       icon: Map,
       accent: 'secondary',

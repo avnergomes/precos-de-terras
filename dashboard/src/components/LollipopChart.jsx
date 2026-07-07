@@ -92,7 +92,12 @@ export default function LollipopChart({
     <div className="bg-white rounded-xl border border-neutral-100 p-6">
       <h3 className="text-lg font-semibold text-neutral-800 mb-4">{title}</h3>
 
-      <svg width={width} height={height}>
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        width="100%"
+        preserveAspectRatio="xMidYMid meet"
+        style={{ maxWidth: width, height: 'auto', display: 'block', margin: '0 auto' }}
+      >
         <g transform={`translate(${MARGIN.left}, ${MARGIN.top})`}>
           {/* Grid lines */}
           {xScale.ticks(5).map((tick, i) => (

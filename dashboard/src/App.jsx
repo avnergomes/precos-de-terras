@@ -20,7 +20,7 @@ import Footer from './components/Footer';
 import Loading from './components/Loading';
 
 export default function App() {
-  const { detailed, geoData, metadata, loading, error, loadGeoData } = useData();
+  const { detailed, geoData, metadata, loading, error, geoError, loadGeoData } = useData();
 
   const [filters, setFilters] = useState({
     anos: [0, 0],
@@ -199,7 +199,11 @@ export default function App() {
           <div className="space-y-6">
             {activeTab === 'overview' && (
               <>
-                <TimeSeriesChart data={aggregates} />
+                <TimeSeriesChart
+                  data={aggregates}
+                  onAnoClick={handleAnoClick}
+                  selectedAno={interactiveFilters.ano}
+                />
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <CategoryChartSimple data={aggregates} />
                   <TerritoryChart data={aggregates} nivel={filters.nivel} />
@@ -209,11 +213,17 @@ export default function App() {
 
             {activeTab === 'historico' && (
               <>
-                <TimeSeriesChart data={aggregates} />
+                <TimeSeriesChart
+                  data={aggregates}
+                  onAnoClick={handleAnoClick}
+                  selectedAno={interactiveFilters.ano}
+                />
                 <RankingTable
                   data={aggregates}
                   title="Territorios de maior valor medio"
                   levelLabel={filters.nivel || 'Nivel territorial'}
+                  onTerritorioClick={handleTerritorioClick}
+                  selectedTerritorio={interactiveFilters.territorio}
                 />
               </>
             )}
@@ -228,7 +238,7 @@ export default function App() {
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   <LollipopChart
                     data={aggregates}
-                    title="Ranking de Territorios por Valor"
+                    title="Ranking de Territórios por Valor (R$/ha)"
                     width={550}
                     height={450}
                     limit={12}
@@ -252,7 +262,13 @@ export default function App() {
             )}
 
             {activeTab === 'mapa' && (
-              <MapChart data={aggregates} geoData={geoData} nivel={filters.nivel} />
+              <MapChart
+                data={aggregates}
+                geoData={geoData}
+                nivel={filters.nivel}
+                geoError={geoError}
+                onRetryGeo={loadGeoData}
+              />
             )}
           </div>
         )}
