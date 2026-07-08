@@ -1,9 +1,39 @@
+import { useEffect, useState } from 'react';
 import { Database, ExternalLink } from 'lucide-react';
 
 export default function Footer({ metadata }) {
   const currentYear = new Date().getFullYear();
   const anoMin = metadata?.anoMin || '----';
   const anoMax = metadata?.anoMax || '----';
+
+  const [generatedAt, setGeneratedAt] = useState(metadata?.generatedAt || null);
+
+  useEffect(() => {
+    if (metadata?.generatedAt) {
+      setGeneratedAt(metadata.generatedAt);
+      return undefined;
+    }
+    let ativo = true;
+    fetch(`${import.meta.env.BASE_URL}data/meta.json`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (ativo && json?.generatedAt) {
+          setGeneratedAt(json.generatedAt);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      ativo = false;
+    };
+  }, [metadata]);
+
+  let dataAtualizacao = null;
+  if (generatedAt) {
+    const parsed = new Date(generatedAt);
+    if (!Number.isNaN(parsed.getTime())) {
+      dataAtualizacao = parsed.toLocaleDateString('pt-BR');
+    }
+  }
 
   return (
     <footer className="mt-12 border-t border-accent-200 bg-gradient-to-b from-neutral-50 to-accent-100">
@@ -131,8 +161,11 @@ export default function Footer({ metadata }) {
         </div>
 
         {/* Bottom */}
-        <div className="mt-6 pt-4 border-t border-accent-200 flex items-center justify-between text-[10px] text-dark-400">
+        <div className="mt-6 pt-4 border-t border-accent-200 flex flex-wrap items-center justify-between gap-2 text-[10px] text-dark-400">
           <p>&copy; {currentYear} Preços de Terras PR. Dados públicos.</p>
+          {dataAtualizacao && (
+            <p>Dados atualizados em <span>{dataAtualizacao}</span></p>
+          )}
         </div>
       </div>
     </footer>

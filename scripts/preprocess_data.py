@@ -3,6 +3,7 @@ import json
 import os
 import re
 import unicodedata
+from datetime import datetime, timezone
 from glob import glob
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -181,6 +182,7 @@ def build_metadata(rows):
         'regioes': regioes,
         'mesorregioes': mesorregioes,
         'territorios': territorios,
+        'generatedAt': datetime.now(timezone.utc).isoformat(),
     }
 
 
@@ -239,7 +241,11 @@ def main():
     with open(aggregated_path, 'w', encoding='utf-8') as handle:
         json.dump({'metadata': metadata}, handle, ensure_ascii=False, separators=(',', ':'))
 
-    print(f'Gerados: {detailed_path} e {aggregated_path}')
+    meta_path = os.path.join(OUTPUT_DIR, 'meta.json')
+    with open(meta_path, 'w', encoding='utf-8') as handle:
+        json.dump({'generatedAt': metadata['generatedAt']}, handle, ensure_ascii=False)
+
+    print(f'Gerados: {detailed_path}, {aggregated_path} e {meta_path}')
 
 
 if __name__ == '__main__':

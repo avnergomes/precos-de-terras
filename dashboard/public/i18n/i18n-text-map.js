@@ -295,6 +295,7 @@ window.__I18N_TEXT_MAP__ = (function () {
     ["Recente", "Recent", "Reciente"],
     ["Antigo", "Old", "Antiguo"],
     ["Recém-atualizado", "Just updated", "Recién actualizado"],
+    ["Dados atualizados em", "Data updated on", "Datos actualizados el"],
 
     // ── aggregations / KPIs ───────────────────────────────────────────
     ["Total", "Total", "Total"],
