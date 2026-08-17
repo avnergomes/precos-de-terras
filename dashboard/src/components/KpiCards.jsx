@@ -24,14 +24,14 @@ function Tooltip({ text, children }) {
         ref={triggerRef}
         onMouseEnter={() => setShow(true)}
         onMouseLeave={() => setShow(false)}
-        onClick={() => setShow(true)}
+        onClick={() => setShow(s => !s)}
         onFocus={() => setShow(true)}
         onBlur={() => setShow(false)}
         onKeyDown={(e) => { if (e.key === 'Escape') setShow(false); }}
         role="button"
         tabIndex={0}
         aria-label="Mais informações"
-        className="cursor-help"
+        className="cursor-help inline-flex items-center justify-center min-h-[44px] min-w-[44px]"
       >
         {children}
       </div>

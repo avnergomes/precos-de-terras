@@ -45,7 +45,8 @@ export default function Tabs({ activeTab, onTabChange }) {
       {canScrollLeft && (
         <button
           onClick={() => scroll(-1)}
-          className="absolute left-0 z-10 p-1 bg-white/90 rounded-full shadow-md
+          className="absolute left-0 z-10 min-h-[44px] min-w-[44px] flex items-center justify-center
+                     bg-white/90 rounded-full shadow-md
                      text-neutral-500 hover:text-primary-700 md:hidden"
           aria-label="Rolar para a esquerda"
         >
@@ -55,7 +56,7 @@ export default function Tabs({ activeTab, onTabChange }) {
 
       <div
         ref={scrollRef}
-        className="flex gap-2 overflow-x-auto scrollbar-thin md:flex-wrap"
+        className={`flex gap-2 overflow-x-auto scrollbar-thin md:flex-wrap${canScrollLeft ? ' pl-12' : ''}${canScrollRight ? ' pr-12' : ''}`}
       >
         {tabs.map(tab => {
           const isActive = activeTab === tab.id;
@@ -78,7 +79,8 @@ export default function Tabs({ activeTab, onTabChange }) {
       {canScrollRight && (
         <button
           onClick={() => scroll(1)}
-          className="absolute right-0 z-10 p-1 bg-white/90 rounded-full shadow-md
+          className="absolute right-0 z-10 min-h-[44px] min-w-[44px] flex items-center justify-center
+                     bg-white/90 rounded-full shadow-md
                      text-neutral-500 hover:text-primary-700 md:hidden"
           aria-label="Rolar para a direita"
         >

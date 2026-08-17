@@ -82,6 +82,7 @@
     background-size: 1.1rem;
     padding-right: 2.5rem;
     font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    min-height: 2.75rem; /* 44px — touch target mínimo */
   }
 
   .filter-label {
@@ -103,6 +104,7 @@
     @apply px-5 py-2.5 text-[0.74rem] font-mono uppercase tracking-[0.16em]
            text-neutral-600 border border-transparent
            transition-colors duration-200 hover:text-neutral-900 hover:border-neutral-900/30;
+    min-height: 2.75rem; /* 44px — touch target mínimo */
   }
   .tab-button.active {
     @apply bg-neutral-900 text-[#f1e9d6] border-neutral-900 shadow-none;
@@ -137,7 +139,7 @@
     background-clip: border-box;
   }
   .kpi-label {
-    @apply text-[0.66rem] font-mono uppercase tracking-[0.2em] text-neutral-500;
+    @apply text-xs font-mono uppercase tracking-[0.2em] text-neutral-500;
   }
 
   .badge {
@@ -189,6 +191,18 @@
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background-color: theme('colors.neutral.400');
     border-radius: 3px;
+  }
+}
+
+/* Mobile a11y — iOS auto-zoom prevention e touch targets */
+@media (max-width: 639px) {
+  /* Selects e inputs com font-size <16px disparam zoom automático no iOS */
+  .filter-select,
+  select,
+  input[type="text"],
+  input[type="search"],
+  input[type="number"] {
+    font-size: 1rem; /* 16px — previne auto-zoom do iOS em campos de formulário */
   }
 }
 

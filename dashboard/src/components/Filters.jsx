@@ -111,7 +111,7 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportCSV}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-white bg-forest-600 hover:bg-forest-700
+            className="flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm text-white bg-forest-600 hover:bg-forest-700
                        rounded-lg transition-colors"
             title="Exportar dados filtrados em CSV"
           >
@@ -121,7 +121,7 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
           {hasActiveFilters && (
             <button
               onClick={handleReset}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-sm text-earth-600 hover:text-forest-600
+              className="flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm text-earth-600 hover:text-forest-600
                          hover:bg-forest-50 rounded-lg transition-colors"
             >
               <RotateCcw className="w-4 h-4" />
@@ -130,7 +130,7 @@ export default function Filters({ metadata, detailed, filters, onFiltersChange, 
           )}
           <button
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-2 hover:bg-earth-100 rounded-lg transition-colors"
+            className="p-2 min-h-[44px] min-w-[44px] flex items-center justify-center hover:bg-earth-100 rounded-lg transition-colors"
             aria-label={isExpanded ? 'Recolher filtros' : 'Expandir filtros'}
           >
             <ChevronDown
@@ -278,7 +278,7 @@ function MultiSelect({ options, selected, onChange, placeholder, useLabels = fal
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar..."
-                className="w-full px-3 py-2 text-sm border border-earth-200 rounded-lg focus:ring-2 focus:ring-forest-500/20 focus:border-forest-500"
+                className="w-full px-3 py-2 text-base sm:text-sm border border-earth-200 rounded-lg focus:ring-2 focus:ring-forest-500/20 focus:border-forest-500"
                 onClick={(e) => e.stopPropagation()}
               />
             </div>
@@ -292,7 +292,7 @@ function MultiSelect({ options, selected, onChange, placeholder, useLabels = fal
                     key={opt}
                     type="button"
                     onClick={() => toggleOption(opt)}
-                    className={`w-full px-4 py-2 text-left text-sm hover:bg-forest-50 flex items-center gap-2
+                    className={`w-full min-h-[44px] px-4 py-2 text-left text-sm hover:bg-forest-50 flex items-center gap-2
                       ${selected.includes(opt) ? 'bg-forest-50 text-forest-700' : 'text-earth-700'}`}
                   >
                     <span className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0
@@ -322,7 +322,7 @@ function MultiSelect({ options, selected, onChange, placeholder, useLabels = fal
                 <button
                   type="button"
                   onClick={() => onChange([])}
-                  className="w-full px-3 py-1.5 text-sm text-earth-600 hover:text-forest-600 hover:bg-forest-50 rounded-lg transition-colors"
+                  className="w-full min-h-[44px] px-3 py-1.5 text-sm text-earth-600 hover:text-forest-600 hover:bg-forest-50 rounded-lg transition-colors"
                 >
                   Limpar selecao
                 </button>
