@@ -140,8 +140,8 @@ def parse_number(value):
     raw = str(value).strip()
     if raw == '':
         return None
-    raw = raw.replace('.', '').replace(' ', '').replace('R$', '')
-    raw = raw.replace(',', '.')
+    # compiled.csv já vem normalizado por parse_pdfs.py (ex.: "153700.0").
+    # Reaplicar a limpeza de milhar aqui removia o ponto decimal e multiplicava tudo por 10.
     try:
         return float(raw)
     except ValueError:

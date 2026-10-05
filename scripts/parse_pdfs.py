@@ -1,9 +1,10 @@
-﻿import csv
+import csv
 import os
 import re
 import unicodedata
 from glob import glob
 
+import pdfplumber
 from pypdf import PdfReader
 
 
@@ -75,7 +76,7 @@ def parse_number(token):
 def is_valid_municipio(value):
     if not value:
         return False
-    if any(ch.isdigit() for ch in value):
+    if any(ch.isdigit() or ch in ':/' for ch in value):  # rodapé "Fonte: ..." e URL
         return False
     normalized = normalize(value)
     if not normalized or normalized in BAD_MUNICIPIO_TOKENS:
@@ -110,11 +111,6 @@ def parse_year_from_filename(filename):
     if year <= 30:
         return 2000 + year
     return 1900 + year
-
-
-def extract_class_codes(header_line):
-    codes = re.findall(r'([A-Z])-\s*([IVX]+)', header_line)
-    return [f"{letter}-{roman}" for letter, roman in codes]
 
 
 def parse_multi_year(text):
@@ -182,48 +178,64 @@ def parse_multi_year(text):
     return rows
 
 
-def parse_single_year(text, year):
+VALUE_RE = re.compile(r'^\d{1,3}(?:\.\d{3})*$')
+
+
+def _header_columns(words):
+    """Centros x das colunas de classe a partir da linha 'Município A- I A- II ...'."""
+    # O título também contém "município"; vale a primeira linha que tiver códigos de classe.
+    for anchor in (w for w in words if normalize(w['text']).startswith('municipio')):
+        line = sorted((w for w in words if abs(w['top'] - anchor['top']) < 3), key=lambda w: w['x0'])
+        columns = [
+            (prefix['text'] + roman['text'], (prefix['x0'] + roman['x1']) / 2)
+            for prefix, roman in zip(line, line[1:])
+            if re.fullmatch(r'[A-Z]-', prefix['text']) and re.fullmatch(r'[IVX]+', roman['text'])
+        ]
+        if columns:
+            return columns
+    return None
+
+
+def parse_single_year(pdf_path, year):
+    """Lê PDFs de ano único (2017+) por coordenadas: cada valor vai para a coluna
+    cujo centro x está mais próximo, então classes vazias não deslocam as demais.
+    O cabeçalho é mantido entre páginas (o PDF de 2021 só o tem na 1ª página)."""
     rows = []
-    current_codes = []
-
-    lines = [line.strip() for line in text.splitlines() if line.strip()]
-    for line in lines:
-        if line.startswith('Fonte:') or line.startswith('PREÃ‡OS') or line.startswith('PreÃ§os'):
-            continue
-        if 'municipio' in normalize(line):
-            codes = extract_class_codes(line)
-            if codes:
-                current_codes = codes
-            continue
-
-        if not any(ch.isdigit() for ch in line):
-            continue
-
-        match = re.search(r'\d', line)
-        if not match:
-            continue
-        municipio = line[:match.start()].strip()
-        if not municipio or not is_valid_municipio(municipio):
-            continue
-
-        values = re.findall(r'\d[\d\.]*', line[match.start():])
-        values = [parse_number(v) for v in values]
-
-        for code, value in zip(current_codes, values):
-            if value is None:
+    columns = None
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            words = page.extract_words()
+            columns = _header_columns(words) or columns
+            if not columns:
                 continue
-            rows.append({
-                'ano': year,
-                'nivel': 'Municipio',
-                'territorio': municipio,
-                'territorio_codigo': '',
-                'categoria': 'Classe de Capacidade de Uso',
-                'subcategoria': code,
-                'classe': '',
-                'preco': value,
-                'unidade': 'R$/ha',
-            })
+            spacing = min(b[1] - a[1] for a, b in zip(columns, columns[1:]))
+            first_col_x = columns[0][1] - spacing / 2
 
+            lines = {}
+            for w in words:
+                lines.setdefault(round(w['top']), []).append(w)
+            for line in lines.values():
+                line.sort(key=lambda w: w['x0'])
+                values = [w for w in line if VALUE_RE.match(w['text'])]
+                name = ' '.join(w['text'] for w in line if w['x0'] < first_col_x and w not in values).strip()
+                if not values or not is_valid_municipio(name):
+                    continue
+                for w in values:
+                    center = (w['x0'] + w['x1']) / 2
+                    code, col_x = min(columns, key=lambda c: abs(c[1] - center))
+                    if abs(col_x - center) > spacing / 2:
+                        continue
+                    rows.append({
+                        'ano': year,
+                        'nivel': 'Municipio',
+                        'territorio': name,
+                        'territorio_codigo': '',
+                        'categoria': 'Classe de Capacidade de Uso',
+                        'subcategoria': code,
+                        'classe': '',
+                        'preco': parse_number(w['text']),
+                        'unidade': 'R$/ha',
+                    })
     return rows
 
 
@@ -246,8 +258,8 @@ def main():
                 format_type = detect_format(text)
             if format_type == 'multi_year':
                 all_rows.extend(parse_multi_year(text))
-            elif format_type == 'single_year' and year_hint:
-                all_rows.extend(parse_single_year(text, year_hint))
+        if format_type == 'single_year' and year_hint:
+            all_rows.extend(parse_single_year(pdf_path, year_hint))
 
     with open(OUT_FILE, 'w', encoding='utf-8', newline='') as handle:
         writer = csv.DictWriter(handle, fieldnames=[
