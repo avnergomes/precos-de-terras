@@ -186,6 +186,26 @@ def build_metadata(rows):
     }
 
 
+def media_por_classe(rows):
+    """Uma linha por (ano, município, classe), com a média simples dos preços.
+
+    Até 2016 o DERAL publicava por tipo de terra (Roxa/Mista/Arenosa) e alguns municípios
+    têm mais de um bloco do mesmo tipo. Ao converter para classe (SUBCATEGORIA_MAP),
+    combinações distintas caem na mesma classe (ex.: Roxa|Mecanizável e Mista|Mecanizada
+    -> A-II). Sem a área de cada tipo não há como ponderar, então usa média simples.
+    """
+    grupos = {}
+    for row in rows:
+        if row['preco'] is None:
+            continue
+        chave = (row['ano'], row['nivel'], row['territorio'], row['subcategoria'])
+        grupos.setdefault(chave, (row, []))[1].append(row['preco'])
+    return [
+        {**base, 'preco': round(sum(precos) / len(precos), 2)}
+        for base, precos in grupos.values()
+    ]
+
+
 def main():
     compiled_path = os.path.join(DATA_DIR, 'compiled.csv')
     if os.path.exists(compiled_path):
@@ -229,6 +249,8 @@ def main():
                     'unidade': row.get('unidade', '').strip(),
                 }
                 rows.append(registro)
+
+    rows = media_por_classe(rows)
 
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     detailed_path = os.path.join(OUTPUT_DIR, 'detailed.json')

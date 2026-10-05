@@ -98,11 +98,6 @@ def detect_format(text):
     return None
 
 
-def extract_years(header_line):
-    years = re.findall(r'\b(19\d{2}|20\d{2})\b', header_line)
-    return [int(y) for y in years]
-
-
 def parse_year_from_filename(filename):
     match = re.search(r'_(\d{2})(?:_|\.|$)', filename)
     if not match:
@@ -113,68 +108,127 @@ def parse_year_from_filename(filename):
     return 1900 + year
 
 
-def parse_multi_year(text):
+def _group_lines(words, tolerance=2):
+    lines = []
+    for w in sorted(words, key=lambda w: w['top']):
+        if lines and w['top'] - lines[-1][0]['top'] <= tolerance:
+            lines[-1].append(w)
+        else:
+            lines.append([w])
+    return [sorted(line, key=lambda w: w['x0']) for line in lines]
+
+
+def _nearest_column(word, columns, spacing):
+    center = (word['x0'] + word['x1']) / 2
+    key, col_x = min(columns, key=lambda c: abs(c[1] - center))
+    return key if abs(col_x - center) <= spacing / 2 else None
+
+
+def _multi_year_header(words):
+    """Anos (com centro x), x inicial das colunas 'Tipo de Terra' e 'Classe' do cabeçalho
+    'Munícipio | Tipo de Terra | Classe / Grau | 2007 ...'."""
+    for anchor in (w for w in words if normalize(w['text']) == 'municipio'):
+        line = [w for w in words if abs(w['top'] - anchor['top']) < 3]
+        years = [(int(w['text']), (w['x0'] + w['x1']) / 2) for w in line if re.fullmatch(r'(19|20)\d{2}', w['text'])]
+        classe = next((w for w in line if normalize(w['text']) == 'classe'), None)
+        tipo = next((w for w in words if w['text'] == 'Tipo' and abs(w['top'] - anchor['top']) < 10), None)
+        if years and classe and tipo:
+            return years, classe['x0'], tipo['x0'] - 5, anchor['top']
+    return None
+
+
+def _name_groups(words, max_gap=12):
+    """Junta palavras de nome em linhas próximas (ex.: 'Almirante' / 'Tamandaré').
+    Retorna [(nome, centro_y)] em ordem vertical."""
+    groups = []
+    for line in _group_lines(words):
+        top = line[0]['top']
+        if groups and top - groups[-1]['bottom'] <= max_gap:
+            groups[-1]['parts'].append(line)
+            groups[-1]['bottom'] = top
+        else:
+            groups.append({'parts': [line], 'top': top, 'bottom': top})
+    return [
+        (' '.join(w['text'] for line in g['parts'] for w in line), (g['top'] + g['bottom']) / 2)
+        for g in groups
+    ]
+
+
+def _block_rows(block, name, soil, years, spacing):
     rows = []
-    current_municipio = None
-    current_soil = None
-    current_years = []
+    for label, _, values in block:
+        for w in values:
+            year = _nearest_column(w, years, spacing)
+            if year is None:
+                continue
+            rows.append({
+                'ano': year,
+                'nivel': 'Municipio',
+                'territorio': name,
+                'territorio_codigo': '',
+                'categoria': SOIL_DISPLAY[normalize(soil['text'])],
+                'subcategoria': CLASS_DISPLAY[label],
+                'classe': '',
+                'preco': parse_number(w['text']),
+                'unidade': 'R$/ha',
+            })
+    return rows
 
-    lines = [line.strip() for line in text.splitlines() if line.strip()]
-    for line in lines:
-        if line.startswith('Fonte:') or line.startswith('PREÃ‡OS') or line.startswith('PreÃ§os'):
-            continue
-        if 'municipio' in normalize(line):
-            years = extract_years(line)
-            if years:
-                current_years = years
-            continue
 
-        has_digit = any(ch.isdigit() for ch in line)
-        normalized = normalize(line)
+def parse_multi_year(pdf_path):
+    """Lê PDFs 1998-2006 e 2007-2016 por coordenadas. Cada bloco tem 4 linhas de classe
+    (Mecanizada ... Inaproveitáveis) com o tipo de terra centralizado nele; o nome do
+    município fica centralizado sobre todos os seus blocos, às vezes quebrado em duas
+    linhas. Pela ordem de texto o nome aparecia fora do lugar e blocos inteiros iam
+    para o município anterior."""
+    rows = []
+    header = None
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            words = page.extract_words()
+            header = _multi_year_header(words) or header
+            if not header:
+                continue
+            years, classe_x, soil_x, header_top = header
+            spacing = min(b[1] - a[1] for a, b in zip(years, years[1:]))
+            label_x = classe_x - 15
+            body = [w for w in words if w['top'] > header_top + 8]
 
-        if has_digit:
-            matched_class = None
-            for class_name in CLASS_NAMES:
-                if normalized.startswith(class_name):
-                    matched_class = class_name
+            blocks = []
+            for line in _group_lines(body):
+                label_words = [w for w in line if w['x0'] >= label_x and not re.fullmatch(r'[\d\.\-]+', w['text'])]
+                label = normalize(' '.join(w['text'] for w in label_words))
+                if label not in CLASS_NAMES:
+                    continue
+                if label == 'mecanizada' or not blocks:
+                    blocks.append([])
+                values = [w for w in line if w['x0'] >= label_x and VALUE_RE.match(w['text'])]
+                blocks[-1].append((label, line[0]['top'], values))
+
+            left = [w for w in body if w['x1'] < label_x]
+            # Separação por coluna, não por texto: o município "Terra Roxa" contém um tipo de solo.
+            soils = [w for w in left if w['x0'] >= soil_x and normalize(w['text']) in SOIL_TYPES]
+            names = [n for n in _name_groups([w for w in left if w['x1'] < soil_x]) if is_valid_municipio(n[0])]
+
+            # O nome fica centralizado sobre todos os blocos (um por tipo de terra) do
+            # município: para cada nome, em ordem, pega quantos blocos fazem o meio bater.
+            i = 0
+            for name, center in names:
+                if i >= len(blocks):
+                    print(f'  aviso: nome sem bloco na pág. {page.page_number}: {name!r}')
                     break
-            if matched_class:
-                class_raw = CLASS_DISPLAY.get(matched_class, line.split()[0])
-                values = re.findall(r'[\d\.\-]+', line)
-                values = [parse_number(v) for v in values]
-                for year, value in zip(current_years, values):
-                    if value is None or current_municipio is None:
+                k = min(range(1, min(4, len(blocks) - i) + 1),
+                        key=lambda k: abs((blocks[i][0][1] + blocks[i + k - 1][-1][1]) / 2 - center))
+                for block in blocks[i:i + k]:
+                    top, bottom = block[0][1] - 4, block[-1][1] + 4
+                    soil = next((w for w in soils if top <= w['top'] <= bottom), None)
+                    if soil is None:
+                        print(f'  aviso: bloco sem solo/município na pág. {page.page_number}: {name!r}')
                         continue
-                    rows.append({
-                        'ano': year,
-                        'nivel': 'Municipio',
-                        'territorio': current_municipio,
-                        'territorio_codigo': '',
-                        'categoria': current_soil or '',
-                        'subcategoria': class_raw.strip(),
-                        'classe': '',
-                        'preco': value,
-                        'unidade': 'R$/ha',
-                    })
-            continue
-
-        tokens = line.split()
-        if not tokens:
-            continue
-        last_token = normalize(tokens[-1])
-        if last_token in SOIL_TYPES:
-            if len(tokens) > 1:
-                candidate = ' '.join(tokens[:-1])
-                current_municipio = candidate if is_valid_municipio(candidate) else None
-            current_soil = SOIL_DISPLAY.get(last_token, tokens[-1])
-            continue
-
-        if line.lower().startswith('tipo de'):
-            continue
-
-        if len(tokens) > 1:
-            current_municipio = line if is_valid_municipio(line) else None
-
+                    rows.extend(_block_rows(block, name, soil, years, spacing))
+                i += k
+            if i < len(blocks):
+                print(f'  aviso: {len(blocks) - i} bloco(s) sem nome na pág. {page.page_number}')
     return rows
 
 
@@ -251,14 +305,10 @@ def main():
         reader = PdfReader(pdf_path)
         filename = os.path.basename(pdf_path)
         year_hint = parse_year_from_filename(filename)
-        format_type = None
-        for page in reader.pages:
-            text = page.extract_text() or ''
-            if format_type is None:
-                format_type = detect_format(text)
-            if format_type == 'multi_year':
-                all_rows.extend(parse_multi_year(text))
-        if format_type == 'single_year' and year_hint:
+        format_type = detect_format(reader.pages[0].extract_text() or '')
+        if format_type == 'multi_year':
+            all_rows.extend(parse_multi_year(pdf_path))
+        elif format_type == 'single_year' and year_hint:
             all_rows.extend(parse_single_year(pdf_path, year_hint))
 
     with open(OUT_FILE, 'w', encoding='utf-8', newline='') as handle:
