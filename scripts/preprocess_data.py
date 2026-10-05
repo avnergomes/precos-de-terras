@@ -114,7 +114,7 @@ def normalizar_nomenclatura(categoria, subcategoria):
 
 
 def load_municipios_map():
-    """Carrega mapeamento de municípios para região e mesorregião do mun_PR.json."""
+    """Carrega nome oficial, região e mesorregião do mun_PR.json, indexados sem acento/caixa."""
     if not os.path.exists(MUN_PR_PATH):
         print(f'Aviso: {MUN_PR_PATH} não encontrado. Região/mesorregião não serão incluídas.')
         return {}
@@ -127,7 +127,8 @@ def load_municipios_map():
         props = feature.get('properties', {})
         nome = props.get('Municipio', '').strip()
         if nome:
-            mun_map[nome.lower()] = {
+            mun_map[normalize(nome)] = {
+                'nome': nome,
                 'regiao': props.get('RegIdr', '').strip(),
                 'mesorregiao': props.get('MesoIdr', '').strip(),
             }
@@ -234,7 +235,9 @@ def main():
                 nivel = row.get('nivel', '').strip()
                 if nivel == 'Municipio' and not is_valid_municipio(territorio):
                     continue
-                mun_info = mun_map.get(territorio.lower(), {})
+                # Grafia oficial da malha (PDFs trazem "Nova Cantu", "Foz do jordão" etc.)
+                mun_info = mun_map.get(normalize(territorio), {})
+                territorio = mun_info.get('nome', territorio)
 
                 registro = {
                     'ano': int(row['ano']) if row.get('ano') else None,
